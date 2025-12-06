@@ -625,6 +625,73 @@ Sets a minimum width of the element.
 
 ---
 
+### onItemLayoutChange()?
+
+> `optional` **onItemLayoutChange**: (`index`, `layout`) => `void`
+
+Callback fired when a child's layout (top, height, bottom) changes.
+
+#### Parameters
+
+##### index
+
+`number`
+
+The index of the item.
+
+##### layout
+
+The new layout of the item.
+
+###### bottom
+
+`number`
+
+###### height
+
+`number`
+
+###### top
+
+`number`
+
+#### Returns
+
+`void`
+
+#### Remarks
+
+This is triggered when an item's height changes. The provided layout
+includes the calculated top position based on preceding items.
+
+---
+
+### onLayout()?
+
+> `optional` **onLayout**: (`layout`) => `void`
+
+Callback fired when the ScrollView layout (viewport) changes.
+
+#### Parameters
+
+##### layout
+
+The new dimensions of the viewport.
+
+###### height
+
+`number`
+
+###### width
+
+`number`
+
+#### Returns
+
+`void`
+
+---
+
 ### onScroll()?
 
 > `optional` **onScroll**: (`scrollOffset`) => `void`

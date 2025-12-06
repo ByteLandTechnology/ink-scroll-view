@@ -181,17 +181,18 @@ export interface ScrollListRef extends ScrollViewRef {
  * ```
  */
 export const ScrollList = forwardRef<ScrollListRef, ScrollListProps>(
-  (
-    {
+  (props, ref) => {
+    const {
       children,
       selectedIndex: controlledSelectedIndex,
       scrollAlignment = "auto",
       onScroll,
       onSelectionChange,
+      onLayout,
+      onItemLayoutChange,
       ...boxProps
-    },
-    ref,
-  ) => {
+    } = props;
+
     const scrollViewRef = useRef<ScrollViewRef>(null);
 
     // Internal selection state (used when not controlled)
@@ -272,6 +273,36 @@ export const ScrollList = forwardRef<ScrollListRef, ScrollListProps>(
       }
     }, [selectedIndex, scrollToItem, itemCount]);
 
+    // Handle layout changes (viewport resize)
+    const handleLayout = useCallback(
+      (layout: { width: number; height: number }) => {
+        onLayout?.(layout);
+        // Ensure selected item is aligned per spec when viewport changes
+        setImmediate(() => {
+          scrollToItem(selectedIndex);
+        });
+      },
+      [onLayout, selectedIndex, scrollToItem],
+    );
+
+    // Handle item layout changes (e.g. expansion)
+    const handleItemLayoutChange = useCallback(
+      (
+        index: number,
+        layout: { top: number; height: number; bottom: number },
+      ) => {
+        onItemLayoutChange?.(index, layout);
+        // If changed item is same or above selected, the selected item's position
+        // effectively changes relative to viewport or needs re-check.
+        if (index <= selectedIndex) {
+          setImmediate(() => {
+            scrollToItem(selectedIndex);
+          });
+        }
+      },
+      [onItemLayoutChange, selectedIndex, scrollToItem],
+    );
+
     // Expose API via ref
     useImperativeHandle(ref, () => ({
       // Delegate to ScrollView
@@ -323,7 +354,13 @@ export const ScrollList = forwardRef<ScrollListRef, ScrollListProps>(
     }));
 
     return (
-      <ScrollView ref={scrollViewRef} onScroll={onScroll} {...boxProps}>
+      <ScrollView
+        ref={scrollViewRef}
+        onScroll={onScroll}
+        onLayout={handleLayout}
+        onItemLayoutChange={handleItemLayoutChange}
+        {...boxProps}
+      >
         {children}
       </ScrollView>
     );

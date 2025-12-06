@@ -136,6 +136,20 @@ Extends `ScrollViewRef` with:
 | `isSelectedVisible()`        | Check if selected item is visible |
 | `getItemCount()`             | Get total number of items         |
 
+### Props
+
+Since `ScrollList` wraps `ScrollView`, it inherits all standard Ink `BoxProps`.
+
+| Prop                 | Type                                                  | Description                                                   |
+| -------------------- | ----------------------------------------------------- | ------------------------------------------------------------- |
+| `children`           | `React.ReactElement[]`                                | Array of child elements.                                      |
+| `onScroll`           | `(offset: number) => void`                            | Callback when scroll position changes.                        |
+| `onLayout`           | `(layout: { width: number; height: number }) => void` | Callback when viewport size changes.                          |
+| `onItemLayoutChange` | `(index: number, layout: ItemLayout) => void`         | Callback when an item's layout changes.                       |
+| `selectedIndex`      | `number`                                              | (ScrollList only) The currently selected item index.          |
+| `scrollAlignment`    | `'auto' \| 'top' \| 'bottom' \| 'center'`             | (ScrollList only) Alignment mode for selected item.           |
+| `onSelectionChange`  | `(index: number) => void`                             | (ScrollList only) Callback when selection changes internally. |
+
 ## API Documentation
 
 See the [API Reference](docs/api/README.md) for full details on props, methods, and interfaces.

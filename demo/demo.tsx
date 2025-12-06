@@ -169,22 +169,20 @@ const Demo = () => {
   useEffect(() => {
     const handleResize = () => {
       listRef.current?.remeasure();
-      updateMetrics();
     };
     stdout?.on("resize", handleResize);
     return () => {
       stdout?.off("resize", handleResize);
     };
-  }, [stdout, updateMetrics]);
+  }, [stdout]);
 
   // Ensure layout updates when content changes significantly
   useEffect(() => {
     // Small delay to allow render to complete before measuring
     setTimeout(() => {
       listRef.current?.remeasure();
-      updateMetrics();
     }, 10);
-  }, [items.length, width, expandedItems, updateMetrics]);
+  }, [items.length, width, expandedItems]);
 
   useInput((input, key) => {
     if (input === "q") process.exit(0);
@@ -192,18 +190,14 @@ const Demo = () => {
     // Navigation
     if (key.upArrow) {
       listRef.current?.selectPrevious();
-      listRef.current?.scrollToItem(listRef.current.getSelectedIndex());
     } else if (key.downArrow) {
       listRef.current?.selectNext();
-      listRef.current?.scrollToItem(listRef.current.getSelectedIndex());
     } else if (key.pageUp) {
       const viewH = metrics.viewport || 5;
       listRef.current?.scrollBy(-(viewH - 1));
-      updateMetrics();
     } else if (key.pageDown) {
       const viewH = metrics.viewport || 5;
       listRef.current?.scrollBy(viewH - 1);
-      updateMetrics();
     }
 
     // Configuration
@@ -232,13 +226,13 @@ const Demo = () => {
           return next;
         });
         // Re-measure only the affected item (more efficient than remeasure)
-        setTimeout(() => {
-          listRef.current?.remeasureItem(idx);
-          updateMetrics();
-        }, 0);
+        listRef.current?.remeasureItem(idx);
+        listRef.current?.scrollToItem(idx);
       }
     } else if (input === "e") {
       const all = new Set(items.map((_, i) => i));
+      listRef.current?.remeasure();
+      listRef.current?.scrollToItem(listRef.current?.getSelectedIndex());
       setExpandedItems(all);
     } else if (input === "c") {
       setExpandedItems(new Set());
@@ -268,6 +262,7 @@ const Demo = () => {
           width="100%"
           onSelectionChange={setSelectedIndex}
           onScroll={updateMetrics}
+          onLayout={updateMetrics}
           selectedIndex={selectedIndex}
           scrollAlignment={alignment}
         >

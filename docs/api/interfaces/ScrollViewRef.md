@@ -12,36 +12,6 @@ Ref interface for controlling the ScrollView programmatically.
 
 ## Properties
 
-### forceLayout()
-
-> **forceLayout**: () => `void`
-
-Forces a complete re-layout of the ScrollView.
-
-#### Returns
-
-`void`
-
-#### Remarks
-
-Triggers re-measurement of all children and viewport dimensions.
-Use this when the terminal is resized or when multiple items change.
-
-#### Example
-
-```tsx
-// Handle terminal resize
-useEffect(() => {
-  const handleResize = () => scrollViewRef.current?.forceLayout();
-  stdout?.on("resize", handleResize);
-  return () => {
-    stdout?.off("resize", handleResize);
-  };
-}, [stdout]);
-```
-
----
-
 ### getItemLayout()
 
 > **getItemLayout**: (`index`) => \{ `bottom`: `number`; `height`: `number`; `isVisible`: `boolean`; `top`: `number`; `visibleHeight`: `number`; `visibleTop`: `number`; \} \| `null`
@@ -201,6 +171,36 @@ This value depends on the container's height and terminal size.
 
 ---
 
+### remeasure()
+
+> **remeasure**: () => `void`
+
+Forces a complete re-layout of the ScrollView.
+
+#### Returns
+
+`void`
+
+#### Remarks
+
+Triggers re-measurement of all children and viewport dimensions.
+Use this when the terminal is resized or when multiple items change.
+
+#### Example
+
+```tsx
+// Handle terminal resize
+useEffect(() => {
+  const handleResize = () => scrollViewRef.current?.remeasure();
+  stdout?.on("resize", handleResize);
+  return () => {
+    stdout?.off("resize", handleResize);
+  };
+}, [stdout]);
+```
+
+---
+
 ### remeasureItem()
 
 > **remeasureItem**: (`index`) => `void`
@@ -221,7 +221,7 @@ The index of the child to re-measure.
 
 #### Remarks
 
-More efficient than `forceLayout()` when only a single item's content
+More efficient than `remeasure()` when only a single item's content
 has changed (e.g., expanded/collapsed). The `itemOffsets` and
 `contentHeight` will be automatically recalculated.
 

@@ -199,19 +199,19 @@ export interface ScrollViewRef {
    * ```tsx
    * // Handle terminal resize
    * useEffect(() => {
-   *   const handleResize = () => scrollViewRef.current?.forceLayout();
+   *   const handleResize = () => scrollViewRef.current?.remeasure();
    *   stdout?.on('resize', handleResize);
    *   return () => { stdout?.off('resize', handleResize); };
    * }, [stdout]);
    * ```
    */
-  forceLayout: () => void;
+  remeasure: () => void;
 
   /**
    * Triggers re-measurement of a specific child item.
    *
    * @remarks
-   * More efficient than `forceLayout()` when only a single item's content
+   * More efficient than `remeasure()` when only a single item's content
    * has changed (e.g., expanded/collapsed). The `itemOffsets` and
    * `contentHeight` will be automatically recalculated.
    *
@@ -283,7 +283,7 @@ const MeasurableItem = ({
  * - This component does NOT handle user input (keyboard/mouse).
  *   You must control scrolling via the exposed ref methods (e.g., using `useInput`).
  * - This component does NOT automatically respond to terminal resize events.
- *   The parent component must call {@link ScrollViewRef.forceLayout | forceLayout()}
+ *   The parent component must call {@link ScrollViewRef.remeasure | remeasure()}
  *   when the terminal resizes or when child content changes dynamically.
  *
  * @example
@@ -293,7 +293,7 @@ const MeasurableItem = ({
  *
  * // Handle terminal resize
  * useEffect(() => {
- *   const handleResize = () => scrollViewRef.current?.forceLayout();
+ *   const handleResize = () => scrollViewRef.current?.remeasure();
  *   stdout?.on('resize', handleResize);
  *   return () => { stdout?.off('resize', handleResize); };
  * }, [stdout]);
@@ -316,7 +316,7 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
     const [scrollTop, setScrollTop] = useState(0);
     const outerRef = useRef<DOMElement>(null);
     const innerRef = useRef<DOMElement>(null);
-    // Force a redraw when forceLayout is called
+    // Force a redraw when remeasure is called
     const [redrawIndex, redraw] = useReducer((x) => x + 1, 0);
 
     // Store heights of all child items to calculate positions
@@ -469,7 +469,7 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
           visibleHeight,
         };
       },
-      forceLayout: () => {
+      remeasure: () => {
         // Trigger a redraw to re-measure viewport and all items.
         // Note: We don't clear itemHeights here to preserve scroll position.
         // New measurements will automatically overwrite old values.

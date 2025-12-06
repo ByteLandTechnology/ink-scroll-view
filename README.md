@@ -38,7 +38,7 @@ const App = () => {
 
   // Handle terminal resize
   useEffect(() => {
-    const handleResize = () => scrollRef.current?.forceLayout();
+    const handleResize = () => scrollRef.current?.remeasure();
     stdout?.on("resize", handleResize);
     return () => {
       stdout?.off("resize", handleResize);
@@ -117,7 +117,7 @@ render(<App />);
 | `getMaxScrollOffset()` | Get maximum scroll offset                                  |
 | `getViewportHeight()`  | Get viewport height                                        |
 | `getItemLayout(index)` | Get layout info for a specific item                        |
-| `forceLayout()`        | Force re-measurement of all items                          |
+| `remeasure()`          | Force re-measurement of all items                          |
 | `remeasureItem(index)` | Re-measure a specific item (efficient for expand/collapse) |
 
 ### ScrollListRef

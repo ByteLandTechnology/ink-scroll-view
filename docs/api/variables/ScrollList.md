@@ -20,7 +20,7 @@ This component extends [ScrollView](ScrollView.md) to provide:
 
 - This component does NOT handle user input. Use `useInput` to control selection.
 - This component does NOT automatically respond to terminal resize events.
-  Call `forceLayout()` on resize.
+  Call `remeasure()` on resize.
 
 ## Example
 

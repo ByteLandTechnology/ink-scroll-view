@@ -17,7 +17,7 @@ Allows scrolling through content that exceeds the visible area of the terminal.
 - This component does NOT handle user input (keyboard/mouse).
   You must control scrolling via the exposed ref methods (e.g., using `useInput`).
 - This component does NOT automatically respond to terminal resize events.
-  The parent component must call [forceLayout()](../interfaces/ScrollViewRef.md#forcelayout)
+  The parent component must call [remeasure()](../interfaces/ScrollViewRef.md#remeasure)
   when the terminal resizes or when child content changes dynamically.
 
 ## Example
@@ -28,7 +28,7 @@ const { stdout } = useStdout();
 
 // Handle terminal resize
 useEffect(() => {
-  const handleResize = () => scrollViewRef.current?.forceLayout();
+  const handleResize = () => scrollViewRef.current?.remeasure();
   stdout?.on("resize", handleResize);
   return () => {
     stdout?.off("resize", handleResize);

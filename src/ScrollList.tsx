@@ -146,7 +146,7 @@ export interface ScrollListRef extends ScrollViewRef {
  * **IMPORTANT**:
  * - This component does NOT handle user input. Use `useInput` to control selection.
  * - This component does NOT automatically respond to terminal resize events.
- *   Call `forceLayout()` on resize.
+ *   Call `remeasure()` on resize.
  *
  * @example
  * ```tsx
@@ -285,7 +285,7 @@ export const ScrollList = forwardRef<ScrollListRef, ScrollListProps>(
       getViewportHeight: () => scrollViewRef.current?.getViewportHeight() ?? 0,
       getItemLayout: (index: number) =>
         scrollViewRef.current?.getItemLayout(index) ?? null,
-      forceLayout: () => scrollViewRef.current?.forceLayout(),
+      remeasure: () => scrollViewRef.current?.remeasure(),
       remeasureItem: (index: number) =>
         scrollViewRef.current?.remeasureItem(index),
 

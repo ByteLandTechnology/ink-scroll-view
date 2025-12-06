@@ -168,7 +168,7 @@ const Demo = () => {
   // Listen for resize
   useEffect(() => {
     const handleResize = () => {
-      listRef.current?.forceLayout();
+      listRef.current?.remeasure();
       updateMetrics();
     };
     stdout?.on("resize", handleResize);
@@ -181,7 +181,7 @@ const Demo = () => {
   useEffect(() => {
     // Small delay to allow render to complete before measuring
     setTimeout(() => {
-      listRef.current?.forceLayout();
+      listRef.current?.remeasure();
       updateMetrics();
     }, 10);
   }, [items.length, width, expandedItems, updateMetrics]);
@@ -231,7 +231,7 @@ const Demo = () => {
           else next.add(idx);
           return next;
         });
-        // Re-measure only the affected item (more efficient than forceLayout)
+        // Re-measure only the affected item (more efficient than remeasure)
         setTimeout(() => {
           listRef.current?.remeasureItem(idx);
           updateMetrics();

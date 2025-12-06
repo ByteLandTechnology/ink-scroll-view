@@ -1,6 +1,6 @@
 {
   "name": "ink-scroll-view",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A ScrollView component for Ink CLI applications",
   "keywords": [
     "react",
@@ -35,8 +35,8 @@
     "docs": "typedoc"
   },
   "peerDependencies": {
-    "ink": "^4.0.0",
-    "react": "^18.0.0"
+    "ink": ">=6",
+    "react": ">=19"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.2.0",

@@ -8,10 +8,8 @@ A robust ScrollView and ScrollList component for [Ink](https://github.com/vadimd
 ## Features
 
 - **ScrollView**: A flexible container for scrolling content that exceeds the viewport.
-- **ScrollList**: A high-level component managing selection state and automatic scrolling (ideal for menus and lists).
 - **Performance**: Optimized for Ink, simplyfing layout calculations to O(1) where possible and efficiently rendering only visible items.
 - **Stability**: Implements scroll anchoring to keep the visible viewport stable even when content above dynamicially expands or collapses.
-- **Navigation**: Built-in support for programmatic scrolling and selection (next/previous/first/last).
 
 ## Installation
 
@@ -62,47 +60,6 @@ const App = () => {
 render(<App />);
 ```
 
-### ScrollList
-
-The `ScrollList` simplifies building selectable lists. It manages the `selectedIndex` and ensures the selected item is always visible.
-
-```tsx
-import React, { useRef, useState } from "react";
-import { render, Text, Box, useInput } from "ink";
-import { ScrollList, ScrollListRef } from "ink-scroll-view";
-
-const App = () => {
-  const listRef = useRef<ScrollListRef>(null);
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const items = ["First", "Second", "Third", "Fourth", "Fifth", "Sixth"];
-
-  useInput((input, key) => {
-    if (key.upArrow) listRef.current?.selectPrevious();
-    if (key.downArrow) listRef.current?.selectNext();
-  });
-
-  return (
-    <ScrollList
-      ref={listRef}
-      height={4}
-      selectedIndex={selectedIndex}
-      onSelectionChange={setSelectedIndex}
-    >
-      {items.map((item, i) => (
-        <Box key={i}>
-          <Text color={i === selectedIndex ? "green" : "white"}>
-            {i === selectedIndex ? "> " : "  "}
-            {item}
-          </Text>
-        </Box>
-      ))}
-    </ScrollList>
-  );
-};
-
-render(<App />);
-```
-
 ## Key Methods
 
 ### ScrollViewRef
@@ -119,36 +76,6 @@ render(<App />);
 | `getItemLayout(index)` | Get layout info for a specific item                        |
 | `remeasure()`          | Force re-measurement of all items                          |
 | `remeasureItem(index)` | Re-measure a specific item (efficient for expand/collapse) |
-
-### ScrollListRef
-
-Extends `ScrollViewRef` with:
-
-| Method                       | Description                       |
-| ---------------------------- | --------------------------------- |
-| `scrollToItem(index, mode?)` | Scroll to a specific item         |
-| `select(index, mode?)`       | Select an item and scroll to it   |
-| `selectNext()`               | Select the next item              |
-| `selectPrevious()`           | Select the previous item          |
-| `selectFirst()`              | Select the first item             |
-| `selectLast()`               | Select the last item              |
-| `getSelectedIndex()`         | Get current selected index        |
-| `isSelectedVisible()`        | Check if selected item is visible |
-| `getItemCount()`             | Get total number of items         |
-
-### Props
-
-Since `ScrollList` wraps `ScrollView`, it inherits all standard Ink `BoxProps`.
-
-| Prop                 | Type                                                  | Description                                                   |
-| -------------------- | ----------------------------------------------------- | ------------------------------------------------------------- |
-| `children`           | `React.ReactElement[]`                                | Array of child elements.                                      |
-| `onScroll`           | `(offset: number) => void`                            | Callback when scroll position changes.                        |
-| `onLayout`           | `(layout: { width: number; height: number }) => void` | Callback when viewport size changes.                          |
-| `onItemLayoutChange` | `(index: number, layout: ItemLayout) => void`         | Callback when an item's layout changes.                       |
-| `selectedIndex`      | `number`                                              | (ScrollList only) The currently selected item index.          |
-| `scrollAlignment`    | `'auto' \| 'top' \| 'bottom' \| 'center'`             | (ScrollList only) Alignment mode for selected item.           |
-| `onSelectionChange`  | `(index: number) => void`                             | (ScrollList only) Callback when selection changes internally. |
 
 ## API Documentation
 

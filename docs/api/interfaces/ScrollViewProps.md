@@ -14,10 +14,6 @@ Extends standard BoxProps from Ink.
 
 - `Props`
 
-## Extended by
-
-- [`ScrollListProps`](ScrollListProps.md)
-
 ## Properties
 
 ### alignItems?

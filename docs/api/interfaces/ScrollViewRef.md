@@ -6,10 +6,6 @@
 
 Ref interface for controlling the ScrollView programmatically.
 
-## Extended by
-
-- [`ScrollListRef`](ScrollListRef.md)
-
 ## Properties
 
 ### getItemLayout()

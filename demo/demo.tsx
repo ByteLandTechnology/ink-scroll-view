@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { render, useInput, Text, Box, useStdout } from "ink";
-import { ScrollList, ScrollListRef, ScrollAlignment } from "../src/index";
+import { ScrollView, ScrollViewRef } from "../src/index";
 
 // --- Types & Constants ---
 
@@ -22,7 +22,7 @@ const generateItem = (id: number): DemoItemData => ({
   details:
     `Here are the detailed contents for item ${id}.\n` +
     `It spans multiple lines to demonstrate variable height.\n` +
-    `ScrollList should handle this dynamic content seamlessly.\n` +
+    `ScrollView handles this dynamic content seamlessly.\n` +
     `• Detail point A\n• Detail point B\n• Detail point C`,
 });
 
@@ -70,11 +70,9 @@ const DemoItem = ({
 };
 
 const ControlPanel = ({
-  alignment,
   width,
   itemCount,
 }: {
-  alignment: ScrollAlignment;
   width: WidthSetting;
   itemCount: number;
 }) => (
@@ -87,10 +85,9 @@ const ControlPanel = ({
     flexShrink={0}
   >
     <Text bold color="magenta" wrap="truncate">
-      🎮 ScrollList Demo | <Text color="green">A</Text>lign:{" "}
-      <Text color="yellow">{alignment.toUpperCase()}</Text> |{" "}
-      <Text color="green">W</Text>idth: <Text color="yellow">{width}</Text> |{" "}
-      Items: <Text color="cyan">{itemCount}</Text>
+      🎮 ScrollView Demo | <Text color="green">W</Text>idth:{" "}
+      <Text color="yellow">{width}</Text> | Items:{" "}
+      <Text color="cyan">{itemCount}</Text>
     </Text>
     <Text color="gray" wrap="truncate">
       ↑/↓: Select | Space: Expand | e/c: Expand/Collapse All | +/-: Add/Remove |
@@ -139,7 +136,7 @@ const StatusBar = ({
 // --- Main Demo ---
 
 const Demo = () => {
-  const listRef = useRef<ScrollListRef>(null);
+  const scrollRef = useRef<ScrollViewRef>(null);
   const { stdout } = useStdout();
 
   // State
@@ -147,7 +144,6 @@ const Demo = () => {
     Array.from({ length: 20 }, (_, i) => generateItem(i)),
   );
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [alignment, setAlignment] = useState<ScrollAlignment>("auto");
   const [width, setWidth] = useState<WidthSetting>("100%");
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
 
@@ -156,11 +152,11 @@ const Demo = () => {
 
   // Helpers
   const updateMetrics = useCallback(() => {
-    if (listRef.current) {
+    if (scrollRef.current) {
       setMetrics({
-        offset: listRef.current.getScrollOffset(),
-        max: listRef.current.getMaxScrollOffset(),
-        viewport: listRef.current.getViewportHeight(),
+        offset: scrollRef.current.getScrollOffset(),
+        max: scrollRef.current.getMaxScrollOffset(),
+        viewport: scrollRef.current.getViewportHeight(),
       });
     }
   }, []);
@@ -168,7 +164,7 @@ const Demo = () => {
   // Listen for resize
   useEffect(() => {
     const handleResize = () => {
-      listRef.current?.remeasure();
+      scrollRef.current?.remeasure();
     };
     stdout?.on("resize", handleResize);
     return () => {
@@ -176,95 +172,117 @@ const Demo = () => {
     };
   }, [stdout]);
 
-  // Ensure layout updates when content changes significantly
+  // Ensure scroll metrics update when content changes
+  const handleContentChange = useCallback(() => {
+    // Defer to allow layout to settle
+    setTimeout(updateMetrics, 10);
+  }, [updateMetrics]);
+
+  // Helper to scroll to selected item manualy
+  const scrollToItem = useCallback((index: number) => {
+    const layout = scrollRef.current?.getItemLayout(index);
+    if (!layout) return;
+
+    const { top, height } = layout;
+    const { visibleTop, visibleHeight } = layout;
+    // Simple visibility check: is it fully visible?
+    if (visibleHeight < height) {
+      // Not fully visible. Scroll to it.
+      // If top < currentScroll -> scroll to top
+      // If bottom > currentScroll + viewport -> scroll to bottom-viewport
+      const viewportH = scrollRef.current?.getViewportHeight() || 0;
+      const currentScroll = scrollRef.current?.getScrollOffset() || 0;
+      const bottom = top + height;
+
+      if (top < currentScroll) {
+        scrollRef.current?.scrollTo(top);
+      } else if (bottom > currentScroll + viewportH) {
+        scrollRef.current?.scrollTo(bottom - viewportH);
+      }
+    }
+  }, []);
+
+  // Effect: Scroll to selected item when it changes
   useEffect(() => {
-    // Small delay to allow render to complete before measuring
-    setTimeout(() => {
-      listRef.current?.remeasure();
-    }, 10);
-  }, [items.length, width, expandedItems]);
+    // Small timeout to ensure layout is ready if sizes changed
+    setTimeout(() => scrollToItem(selectedIndex), 20);
+  }, [selectedIndex, scrollToItem]);
 
   useInput((input, key) => {
     if (input === "q") process.exit(0);
 
     // Navigation
     if (key.upArrow) {
-      listRef.current?.selectPrevious();
+      setSelectedIndex((prev) => Math.max(0, prev - 1));
     } else if (key.downArrow) {
-      listRef.current?.selectNext();
+      setSelectedIndex((prev) => Math.min(items.length - 1, prev + 1));
     } else if (key.pageUp) {
       const viewH = metrics.viewport || 5;
-      listRef.current?.scrollBy(-(viewH - 1));
+      scrollRef.current?.scrollBy(-(viewH - 1));
     } else if (key.pageDown) {
       const viewH = metrics.viewport || 5;
-      listRef.current?.scrollBy(viewH - 1);
+      scrollRef.current?.scrollBy(viewH - 1);
     }
 
     // Configuration
-    else if (input === "a") {
-      const modes: ScrollAlignment[] = ["auto", "center", "top", "bottom"];
-      const next = modes[(modes.indexOf(alignment) + 1) % modes.length];
-      setAlignment(next);
-      // Re-select current to apply new alignment immediately
-      if (listRef.current) {
-        const current = listRef.current.getSelectedIndex();
-        listRef.current.select(current, next);
-      }
-    } else if (input === "w") {
+    else if (input === "w") {
       const widths: WidthSetting[] = ["100%", "70%", "auto"];
       setWidth(widths[(widths.indexOf(width) + 1) % widths.length]);
+      setTimeout(() => scrollRef.current?.remeasure(), 50);
     }
 
     // Content Manipulation
     else if (input === " ") {
-      const idx = listRef.current?.getSelectedIndex() ?? -1;
-      if (idx >= 0) {
-        setExpandedItems((prev) => {
-          const next = new Set(prev);
-          if (next.has(idx)) next.delete(idx);
-          else next.add(idx);
-          return next;
-        });
-        // Re-measure only the affected item (more efficient than remeasure)
-        listRef.current?.remeasureItem(idx);
-        listRef.current?.scrollToItem(idx);
-      }
+      setExpandedItems((prev) => {
+        const next = new Set(prev);
+        if (next.has(selectedIndex)) next.delete(selectedIndex);
+        else next.add(selectedIndex);
+        return next;
+      });
+      // Trigger remeasure only for this item for efficiency
+      scrollRef.current?.remeasureItem(selectedIndex);
+      handleContentChange();
     } else if (input === "e") {
       const all = new Set(items.map((_, i) => i));
-      listRef.current?.remeasure();
-      listRef.current?.scrollToItem(listRef.current?.getSelectedIndex());
       setExpandedItems(all);
+      setTimeout(() => {
+        scrollRef.current?.remeasure();
+        scrollToItem(selectedIndex);
+        updateMetrics();
+      }, 50);
     } else if (input === "c") {
       setExpandedItems(new Set());
+      setTimeout(() => {
+        scrollRef.current?.remeasure();
+        scrollToItem(selectedIndex);
+        updateMetrics();
+      }, 50);
     } else if (input === "+" || input === "=") {
       setItems((prev) => [...prev, generateItem(prev.length)]);
+      updateMetrics();
     } else if (input === "-" || input === "_") {
       setItems((prev) => prev.slice(0, -1));
-      // Adjust selection if it was on the removed item
-      if (selectedIndex >= items.length - 1) {
-        listRef.current?.select(Math.max(0, items.length - 2));
-      }
+      setSelectedIndex((prev) => Math.min(prev, items.length - 2));
+      updateMetrics();
     }
   });
 
   return (
     <Box flexDirection="column" height={process.stdout.rows - 1}>
-      <ControlPanel
-        alignment={alignment}
-        width={width}
-        itemCount={items.length}
-      />
+      <ControlPanel width={width} itemCount={items.length} />
 
       <Box flexGrow={1} borderStyle="single" borderColor="white">
-        <ScrollList
-          ref={listRef}
-          height="100%"
-          width="100%"
-          onSelectionChange={setSelectedIndex}
+        <ScrollView
+          ref={scrollRef}
           onScroll={updateMetrics}
           onLayout={updateMetrics}
-          selectedIndex={selectedIndex}
-          scrollAlignment={alignment}
+          onItemLayoutChange={(index, layout) => {
+            // If the item expanding/collapsing is the selected one, ensure it stays visible
+            if (index === selectedIndex) {
+              scrollToItem(index);
+            }
+            updateMetrics();
+          }}
         >
           {items.map((item, i) => (
             <DemoItem
@@ -275,7 +293,7 @@ const Demo = () => {
               width={width}
             />
           ))}
-        </ScrollList>
+        </ScrollView>
       </Box>
 
       <StatusBar

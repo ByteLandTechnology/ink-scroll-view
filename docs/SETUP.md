@@ -169,3 +169,32 @@ npm install -D ink react @types/ink
 - [npm peerDependencies documentation](https://docs.npmjs.com/cli/v10/configuring-npm/package-json#peerdependencies)
 - [Ink GitHub Repository](https://github.com/vadimdemedes/ink)
 - [React GitHub Repository](https://github.com/facebook/react)
+
+## 8. Documentation Generation (TypeDoc)
+
+Setup `typedoc` to generate API documentation from TypeScript source code comments.
+
+```bash
+# Install TypeDoc and the Markdown plugin
+npm install -D typedoc typedoc-plugin-markdown
+
+# Create configuration file: typedoc.json
+echo '{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["./src/index.tsx"],
+  "out": "docs/api",
+  "plugin": ["typedoc-plugin-markdown"],
+  "name": "ink-scroll-view",
+  "readme": "none",
+  "hideBreadcrumbs": true,
+  "githubPages": false
+}' > typedoc.json
+
+# Add "docs" script to package.json
+# "scripts": {
+#   "docs": "typedoc"
+# }
+```
+
+- [TypeDoc Documentation](https://typedoc.org/)
+- [typedoc-plugin-markdown](https://github.com/tgreyuk/typedoc-plugin-markdown)

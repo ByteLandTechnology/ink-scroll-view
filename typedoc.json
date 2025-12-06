@@ -1,0 +1,10 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["./src/index.tsx"],
+  "out": "docs/api",
+  "plugin": ["typedoc-plugin-markdown"],
+  "name": "ink-scroll-view",
+  "readme": "none",
+  "hideBreadcrumbs": true,
+  "githubPages": false
+}

@@ -1,0 +1,37 @@
+{
+  "name": "ink-scroll-view",
+  "version": "0.0.1",
+  "description": "A ScrollView component for Ink CLI applications",
+  "keywords": [
+    "react",
+    "ink",
+    "cli",
+    "terminal",
+    "scrollview",
+    "component",
+    "ui"
+  ],
+  "homepage": "https://www.byteland.app/projects/ink-scroll-view",
+  "bugs": {
+    "url": "https://github.com/ByteLandTechnology/ink-scroll-view/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ByteLandTechnology/ink-scroll-view.git"
+  },
+  "license": "MIT",
+  "author": "ByteLand Technology <github@byteland.app>",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "vitest run",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^20.2.0",
+    "@commitlint/config-conventional": "^20.2.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.7.4"
+  }
+}

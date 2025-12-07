@@ -1,17 +1,21 @@
 # ink-scroll-view
 
-A robust ScrollView and ScrollList component for [Ink](https://github.com/vadimdemedes/ink) CLI applications.
+A robust, performance-optimized ScrollView component for [Ink](https://github.com/vadimdemedes/ink) CLI applications.
 
 ![License](https://img.shields.io/npm/l/ink-scroll-view)
 ![Version](https://img.shields.io/npm/v/ink-scroll-view)
 
-## Features
+## ✨ Features
 
-- **ScrollView**: A flexible container for scrolling content that exceeds the viewport.
-- **Performance**: Optimized for Ink, simplyfing layout calculations to O(1) where possible and efficiently rendering only visible items.
-- **Stability**: Implements scroll anchoring to keep the visible viewport stable even when content above dynamicially expands or collapses.
+- **📦 Flexible Container**: Handles content larger than the visible terminal viewport.
+- **⚡ Performance First**:
+  - **Optimistic Updates**: Immediate state updates for smoother interaction.
+  - **Efficient Re-rendering**: Renders all children but strictly manages visibility via `overflow` and offsets, ensuring correct layout without layout thrashing.
+- **📏 Auto-Measurement**: Automatically measures child heights using a virtually rendered DOM.
+- **🔁 Dynamic Content**: Supports adding, removing, and expanding/collapsing items on the fly.
+- **⚓️ Layout Stability**: Includes logic to maintain scroll position context when content changes.
 
-## Installation
+## 📦 Installation
 
 ```bash
 npm install ink-scroll-view
@@ -19,22 +23,20 @@ npm install ink-scroll-view
 npm install ink react
 ```
 
-## Usage
+## 🚀 Usage
 
-### ScrollView
-
-The `ScrollView` is a low-level container. You are responsible for handling input (e.g., using `useInput` from Ink) and calling the exposed ref methods.
+`ScrollView` is a layout primitive. It **does not** capture user input automatically. You must control it programmatically using React `refs` and Ink's `useInput`.
 
 ```tsx
 import React, { useRef, useEffect } from "react";
-import { render, Text, useInput, useStdout } from "ink";
+import { render, Text, Box, useInput, useStdout } from "ink";
 import { ScrollView, ScrollViewRef } from "ink-scroll-view";
 
 const App = () => {
   const scrollRef = useRef<ScrollViewRef>(null);
   const { stdout } = useStdout();
 
-  // Handle terminal resize
+  // 1. Handle Terminal Resizing due to manual window change
   useEffect(() => {
     const handleResize = () => scrollRef.current?.remeasure();
     stdout?.on("resize", handleResize);
@@ -43,43 +45,101 @@ const App = () => {
     };
   }, [stdout]);
 
+  // 2. Handle Keyboard Input
   useInput((input, key) => {
-    if (key.upArrow) scrollRef.current?.scrollBy(-1);
-    if (key.downArrow) scrollRef.current?.scrollBy(1);
+    if (key.upArrow) {
+      scrollRef.current?.scrollBy(-1); // Scroll up 1 line
+    }
+    if (key.downArrow) {
+      scrollRef.current?.scrollBy(1); // Scroll down 1 line
+    }
+    if (key.pageUp) {
+      // Scroll up by viewport height
+      const height = scrollRef.current?.getViewportHeight() || 1;
+      scrollRef.current?.scrollBy(-height);
+    }
+    if (key.pageDown) {
+      const height = scrollRef.current?.getViewportHeight() || 1;
+      scrollRef.current?.scrollBy(height);
+    }
   });
 
   return (
-    <ScrollView ref={scrollRef} height={10}>
-      {Array.from({ length: 50 }).map((_, i) => (
-        <Text key={i}>Item {i + 1}</Text>
-      ))}
-    </ScrollView>
+    <Box
+      height={10}
+      width="100%"
+      borderStyle="single"
+      borderColor="green"
+      flexDirection="column"
+    >
+      <ScrollView ref={scrollRef}>
+        {Array.from({ length: 50 }).map((_, i) => (
+          <Text key={i}>Item {i + 1} - content with variable length...</Text>
+        ))}
+      </ScrollView>
+    </Box>
   );
 };
 
 render(<App />);
 ```
 
-## Key Methods
+## 📐 How it Works
 
-### ScrollViewRef
+The component renders all children into a container but shifts the content vertically using `marginTop`. The parent box with `overflow="hidden"` acts as the "viewport".
 
-| Method                 | Description                                                |
-| ---------------------- | ---------------------------------------------------------- |
-| `scrollTo(y)`          | Scroll to a specific vertical position                     |
-| `scrollBy(delta)`      | Scroll by a relative amount                                |
-| `scrollToTop()`        | Scroll to the top                                          |
-| `scrollToBottom()`     | Scroll to the bottom                                       |
-| `getScrollOffset()`    | Get current scroll offset                                  |
-| `getMaxScrollOffset()` | Get maximum scroll offset                                  |
-| `getViewportHeight()`  | Get viewport height                                        |
-| `getItemLayout(index)` | Get layout info for a specific item                        |
-| `remeasure()`          | Force re-measurement of all items                          |
-| `remeasureItem(index)` | Re-measure a specific item (efficient for expand/collapse) |
+```
+┌─────────────────────────┐
+│  (hidden content)       │ ← Content above viewport
+│  ...                    │
+├─────────────────────────┤ ← scrollOffset (distance from top)
+│  ┌───────────────────┐  │
+│  │ Visible Viewport  │  │ ← What user sees
+│  │                   │  │
+│  └───────────────────┘  │
+├─────────────────────────┤
+│  (hidden content)       │ ← Content below viewport
+│  ...                    │
+└─────────────────────────┘
+```
 
-## API Documentation
+## 📚 API Reference
 
-See the [API Reference](docs/api/README.md) for full details on props, methods, and interfaces.
+### Props (`ScrollViewProps`)
+
+Inherits standard `BoxProps` from Ink.
+
+| Prop                    | Type                                      | Description                                                                         |
+| :---------------------- | :---------------------------------------- | :---------------------------------------------------------------------------------- |
+| `children`              | `ReactElement[]`                          | **Required**. List of child elements. **Must use unique `key`s** (strings/numbers). |
+| `onScroll`              | `(offset: number) => void`                | Called when scroll position changes.                                                |
+| `onViewportSizeChange`  | `(layout: { width, height }) => void`     | Called when the **viewport** dimensions change.                                     |
+| `onContentHeightChange` | `(height: number) => void`                | Called when the total content height changes.                                       |
+| `onItemHeightChange`    | `(index: number, height: number) => void` | Called when an individual item's height changes.                                    |
+| ...                     | `BoxProps`                                | Any other prop accepted by Ink's `Box`.                                             |
+
+### Ref Methods (`ScrollViewRef`)
+
+Access these via `ref.current`.
+
+| Method               | Signature                         | Description                                                                                                                |
+| :------------------- | :-------------------------------- | :------------------------------------------------------------------------------------------------------------------------- |
+| `scrollTo`           | `(offset: number) => void`        | Scrolls to an absolute Y offset from the top.                                                                              |
+| `scrollBy`           | `(delta: number) => void`         | Scrolls by a relative amount (negative = up, positive = down).                                                             |
+| `scrollToTop`        | `() => void`                      | Helper to scroll to offset 0.                                                                                              |
+| `scrollToBottom`     | `() => void`                      | Helper to scroll to the maximum possible offset.                                                                           |
+| `getScrollOffset`    | `() => number`                    | Returns the current scroll offset.                                                                                         |
+| `getMaxScrollOffset` | `() => number`                    | Returns the maximum valid scroll offset (`contentHeight - viewportHeight`).                                                |
+| `getViewportHeight`  | `() => number`                    | Returns the current height of the visible area.                                                                            |
+| `getItemHeight`      | `(key: string) => number \| null` | Returns the measured height of a specific item by its key.                                                                 |
+| `remeasure`          | `() => void`                      | Re-checks viewport dimensions. **Must call this on terminal resize.**                                                      |
+| `remeasureItem`      | `(index: number) => void`         | Forces a specific child to re-measure. Useful for dynamic content (expand/collapse) that doesn't trigger a full re-render. |
+
+## 💡 Tips
+
+1.  **Unique Keys**: Always provide stable, unique `key` props (strings or numbers) to your children. This allows `ScrollView` to accurately track height changes even when items are re-ordered or removed.
+2.  **Terminal Resizing**: Ink components don't automatically know when the terminal window resizes. You need to listen to `process.stdout`'s `resize` event and call `remeasure()` on the ref.
+3.  **Dynamic Content**: If you have an item that expands (e.g., "See more"), calling `remeasureItem(index)` is more efficient than forcing a full update.
 
 ## License
 

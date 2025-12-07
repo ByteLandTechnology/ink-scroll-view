@@ -2,166 +2,15 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { render, useInput, Text, Box, useStdout } from "ink";
 import { ScrollView, ScrollViewRef } from "../src/index";
 
-// --- Types & Constants ---
-
-type WidthSetting = "100%" | "70%" | "auto";
-
-interface DemoItemData {
-  id: number;
-  title: string;
-  summary: string;
-  details: string;
-}
-
-// --- Helper Functions ---
-
-const generateItem = (id: number): DemoItemData => ({
-  id,
-  title: `List Item #${id}`,
-  summary: `This is a summary for item ${id}. It has some text.`,
-  details:
-    `Here are the detailed contents for item ${id}.\n` +
-    `It spans multiple lines to demonstrate variable height.\n` +
-    `ScrollView handles this dynamic content seamlessly.\n` +
-    `• Detail point A\n• Detail point B\n• Detail point C`,
-});
-
-// --- Components ---
-
-const DemoItem = ({
-  data,
-  isSelected,
-  isExpanded,
-  width,
-}: {
-  data: DemoItemData;
-  isSelected: boolean;
-  isExpanded: boolean;
-  width: WidthSetting;
-}) => {
-  return (
-    <Box
-      flexDirection="column"
-      borderStyle={isSelected ? "double" : "single"}
-      borderColor={isSelected ? "cyan" : "gray"}
-      paddingX={1}
-      width={width === "auto" ? undefined : width}
-      marginBottom={0}
-    >
-      <Box justifyContent="space-between">
-        <Text color={isSelected ? "cyan" : "white"} bold={isSelected}>
-          {isSelected ? "▶ " : "  "}
-          {data.title}
-        </Text>
-        <Text color="gray">{isExpanded ? "[-]" : "[+]"}</Text>
-      </Box>
-
-      <Text color="gray" wrap="wrap">
-        {data.summary}
-      </Text>
-
-      {isExpanded && (
-        <Box marginTop={1} borderStyle="single" borderColor="blue" paddingX={1}>
-          <Text color="yellow">{data.details}</Text>
-        </Box>
-      )}
-    </Box>
-  );
-};
-
-const ControlPanel = ({
-  width,
-  itemCount,
-}: {
-  width: WidthSetting;
-  itemCount: number;
-}) => (
-  <Box
-    borderStyle="round"
-    borderColor="magenta"
-    flexDirection="column"
-    paddingX={1}
-    height={5}
-    flexShrink={0}
-  >
-    <Text bold color="magenta" wrap="truncate">
-      🎮 ScrollView Demo | <Text color="green">W</Text>idth:{" "}
-      <Text color="yellow">{width}</Text> | Items:{" "}
-      <Text color="cyan">{itemCount}</Text>
-    </Text>
-    <Text color="gray" wrap="truncate">
-      ↑/↓: Select | Space: Expand | e/c: Expand/Collapse All | +/-: Add/Remove |
-      q: Quit
-    </Text>
-  </Box>
-);
-
-const StatusBar = ({
-  selectedIndex,
-  scrollOffset,
-  maxScroll,
-  viewportHeight,
-}: {
-  selectedIndex: number;
-  scrollOffset: number;
-  maxScroll: number;
-  viewportHeight: number;
-}) => (
-  <Box
-    borderStyle="single"
-    borderColor="gray"
-    paddingX={1}
-    height={3}
-    flexShrink={0}
-  >
-    <Box width="30%">
-      <Text wrap="truncate">
-        Selected:{" "}
-        <Text color="cyan" bold>
-          {selectedIndex}
-        </Text>
-      </Text>
-    </Box>
-    <Box width="40%" justifyContent="center">
-      <Text wrap="truncate">
-        Scroll: <Text color="green">{scrollOffset}</Text> / {maxScroll}
-      </Text>
-    </Box>
-    <Box width="30%" justifyContent="flex-end">
-      <Text wrap="truncate">Viewport: {viewportHeight}</Text>
-    </Box>
-  </Box>
-);
-
-// --- Main Demo ---
-
 const Demo = () => {
   const scrollRef = useRef<ScrollViewRef>(null);
   const { stdout } = useStdout();
+  const [width, setWidth] = useState<string | number>("100%");
 
-  // State
-  const [items, setItems] = useState<DemoItemData[]>(() =>
-    Array.from({ length: 20 }, (_, i) => generateItem(i)),
-  );
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const [width, setWidth] = useState<WidthSetting>("100%");
-  const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
+  // Track scroll state for display
+  const [scrollInfo, setScrollInfo] = useState({ scroll: 0, max: 0 });
 
-  // Metrics for Status Bar
-  const [metrics, setMetrics] = useState({ offset: 0, max: 0, viewport: 0 });
-
-  // Helpers
-  const updateMetrics = useCallback(() => {
-    if (scrollRef.current) {
-      setMetrics({
-        offset: scrollRef.current.getScrollOffset(),
-        max: scrollRef.current.getMaxScrollOffset(),
-        viewport: scrollRef.current.getViewportHeight(),
-      });
-    }
-  }, []);
-
-  // Listen for resize
+  // Handle Resize
   useEffect(() => {
     const handleResize = () => {
       scrollRef.current?.remeasure();
@@ -172,136 +21,129 @@ const Demo = () => {
     };
   }, [stdout]);
 
-  // Ensure scroll metrics update when content changes
-  const handleContentChange = useCallback(() => {
-    // Defer to allow layout to settle
-    setTimeout(updateMetrics, 10);
-  }, [updateMetrics]);
-
-  // Helper to scroll to selected item manualy
-  const scrollToItem = useCallback((index: number) => {
-    const layout = scrollRef.current?.getItemLayout(index);
-    if (!layout) return;
-
-    const { top, height } = layout;
-    const { visibleTop, visibleHeight } = layout;
-    // Simple visibility check: is it fully visible?
-    if (visibleHeight < height) {
-      // Not fully visible. Scroll to it.
-      // If top < currentScroll -> scroll to top
-      // If bottom > currentScroll + viewport -> scroll to bottom-viewport
-      const viewportH = scrollRef.current?.getViewportHeight() || 0;
-      const currentScroll = scrollRef.current?.getScrollOffset() || 0;
-      const bottom = top + height;
-
-      if (top < currentScroll) {
-        scrollRef.current?.scrollTo(top);
-      } else if (bottom > currentScroll + viewportH) {
-        scrollRef.current?.scrollTo(bottom - viewportH);
-      }
+  const updateScrollInfo = useCallback(() => {
+    if (scrollRef.current) {
+      setScrollInfo({
+        scroll: scrollRef.current.getScrollOffset(),
+        max: scrollRef.current.getMaxScrollOffset(),
+      });
     }
   }, []);
 
-  // Effect: Scroll to selected item when it changes
+  // Update info after layout
   useEffect(() => {
-    // Small timeout to ensure layout is ready if sizes changed
-    setTimeout(() => scrollToItem(selectedIndex), 20);
-  }, [selectedIndex, scrollToItem]);
+    // Small timeout to wait for layout
+    setTimeout(updateScrollInfo, 100);
+  }, [width, updateScrollInfo]);
 
   useInput((input, key) => {
     if (input === "q") process.exit(0);
 
-    // Navigation
     if (key.upArrow) {
-      setSelectedIndex((prev) => Math.max(0, prev - 1));
+      scrollRef.current?.scrollBy(-1);
     } else if (key.downArrow) {
-      setSelectedIndex((prev) => Math.min(items.length - 1, prev + 1));
+      scrollRef.current?.scrollBy(1);
     } else if (key.pageUp) {
-      const viewH = metrics.viewport || 5;
-      scrollRef.current?.scrollBy(-(viewH - 1));
+      const vh = scrollRef.current?.getViewportHeight() || 10;
+      scrollRef.current?.scrollBy(-vh);
     } else if (key.pageDown) {
-      const viewH = metrics.viewport || 5;
-      scrollRef.current?.scrollBy(viewH - 1);
+      const vh = scrollRef.current?.getViewportHeight() || 10;
+      scrollRef.current?.scrollBy(vh);
     }
 
-    // Configuration
-    else if (input === "w") {
-      const widths: WidthSetting[] = ["100%", "70%", "auto"];
-      setWidth(widths[(widths.indexOf(width) + 1) % widths.length]);
-      setTimeout(() => scrollRef.current?.remeasure(), 50);
-    }
-
-    // Content Manipulation
-    else if (input === " ") {
-      setExpandedItems((prev) => {
-        const next = new Set(prev);
-        if (next.has(selectedIndex)) next.delete(selectedIndex);
-        else next.add(selectedIndex);
-        return next;
+    if (input === "w") {
+      // Toggle widths
+      setWidth((prev) => {
+        if (prev === "100%") return 60;
+        if (prev === 60) return 40;
+        return "100%";
       });
-      // Trigger remeasure only for this item for efficiency
-      scrollRef.current?.remeasureItem(selectedIndex);
-      handleContentChange();
-    } else if (input === "e") {
-      const all = new Set(items.map((_, i) => i));
-      setExpandedItems(all);
-      setTimeout(() => {
-        scrollRef.current?.remeasure();
-        scrollToItem(selectedIndex);
-        updateMetrics();
-      }, 50);
-    } else if (input === "c") {
-      setExpandedItems(new Set());
-      setTimeout(() => {
-        scrollRef.current?.remeasure();
-        scrollToItem(selectedIndex);
-        updateMetrics();
-      }, 50);
-    } else if (input === "+" || input === "=") {
-      setItems((prev) => [...prev, generateItem(prev.length)]);
-      updateMetrics();
-    } else if (input === "-" || input === "_") {
-      setItems((prev) => prev.slice(0, -1));
-      setSelectedIndex((prev) => Math.min(prev, items.length - 2));
-      updateMetrics();
+      // Allow re-render then measure
+      setTimeout(() => scrollRef.current?.remeasure(), 50);
     }
   });
 
   return (
-    <Box flexDirection="column" height={process.stdout.rows - 1}>
-      <ControlPanel width={width} itemCount={items.length} />
-
-      <Box flexGrow={1} borderStyle="single" borderColor="white">
-        <ScrollView
-          ref={scrollRef}
-          onScroll={updateMetrics}
-          onLayout={updateMetrics}
-          onItemLayoutChange={(index, layout) => {
-            // If the item expanding/collapsing is the selected one, ensure it stays visible
-            if (index === selectedIndex) {
-              scrollToItem(index);
-            }
-            updateMetrics();
-          }}
-        >
-          {items.map((item, i) => (
-            <DemoItem
-              key={item.id} // Use stable ID as key
-              data={item}
-              isSelected={i === selectedIndex}
-              isExpanded={expandedItems.has(i)}
-              width={width}
-            />
-          ))}
-        </ScrollView>
+    <Box flexDirection="column" height={process.stdout.rows}>
+      <Box borderStyle="round" borderColor="cyan" paddingX={1} flexShrink={0}>
+        <Text>
+          <Text bold color="cyan">
+            Simple Scroll Demo
+          </Text>{" "}
+          |<Text color="yellow"> Width: {width}</Text> |
+          <Text color="green">
+            {" "}
+            Scroll: {scrollInfo.scroll}/{scrollInfo.max}
+          </Text>
+        </Text>
       </Box>
 
-      <StatusBar
-        selectedIndex={selectedIndex}
-        scrollOffset={metrics.offset}
-        maxScroll={metrics.max}
-        viewportHeight={metrics.viewport}
-      />
+      <Box marginY={1}>
+        <Text color="gray">
+          Logs: [Up/Down] Scroll • [w] Toggle Width • [q] Quit
+        </Text>
+      </Box>
+
+      <Box
+        flexGrow={1}
+        width="100%"
+        borderStyle="single"
+        borderColor="white"
+        padding={1} // Padding around the scrollview container to show it's constrained
+      >
+        {/* Constrain the ScrollView width here */}
+        <Box width={width} borderStyle="single" borderColor="blue">
+          <ScrollView
+            ref={scrollRef}
+            onScroll={(offset) => {
+              setScrollInfo((prev) => ({ ...prev, scroll: offset }));
+            }}
+          >
+            {[
+              <Box
+                key="tall-content"
+                flexDirection="column"
+                height={60}
+                width="100%"
+                borderStyle="double"
+                borderColor="magenta"
+                paddingX={2}
+              >
+                <Text underline bold>
+                  HEADER OF TALL BOX
+                </Text>
+                <Box height={1} />
+                <Text wrap="wrap">
+                  Line 1: Beginning of the long journey... This text should wrap
+                  if the width is small enough to trigger wrapping.
+                </Text>
+                <Text wrap="wrap">Line 2: Still near the top.</Text>
+                <Box height={5} borderStyle="single" borderColor="gray">
+                  <Text>Some nested content box here.</Text>
+                </Box>
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <Text key={i}>Filler line {i + 3}</Text>
+                ))}
+                <Box
+                  flexGrow={1}
+                  justifyContent="center"
+                  alignItems="center"
+                  borderStyle="classic"
+                  borderColor="yellow"
+                >
+                  <Text color="yellow">MIDDLE SECTION (Flexible Space)</Text>
+                </Box>
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <Text key={i + 20}>Bottom Filler {i}</Text>
+                ))}
+                <Text>Line 98: Almost there...</Text>
+                <Text>Line 99: The End.</Text>
+                <Text inverse>FOOTER</Text>
+              </Box>,
+            ]}
+          </ScrollView>
+        </Box>
+      </Box>
     </Box>
   );
 };

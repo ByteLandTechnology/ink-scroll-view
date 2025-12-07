@@ -288,7 +288,7 @@ const MeasurableItem = ({
   }, [index, onMeasure, width, measureKey]);
 
   return (
-    <Box ref={ref} flexShrink={0} width={width}>
+    <Box ref={ref} flexShrink={0} width="100%">
       {children}
     </Box>
   );

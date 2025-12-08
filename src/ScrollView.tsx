@@ -327,17 +327,17 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
     const itemKeysRef = useRef<(string | number)[]>([]);
 
     /**
-     * Cache of item top positions.
+     * Cache of item offset positions (distance from top).
      * Lazily updated in getItemPosition.
      */
-    const itemTopsRef = useRef<number[]>([]);
+    const itemOffsetsRef = useRef<number[]>([]);
 
     /**
-     * The index of the first invalid item top position.
+     * The index of the first invalid item offset position.
      * 0 means no positions are valid.
-     * If validTopIndexRef.current is i, then itemTopsRef.current[0...i-1] are valid.
+     * If validOffsetIndexRef.current is i, then itemOffsetsRef.current[0...i-1] are valid.
      */
-    const validTopIndexRef = useRef<number>(0);
+    const validOffsetIndexRef = useRef<number>(0);
 
     // Viewport dimensions (visible area)
     const [viewportSize, setViewportSize] = useState({
@@ -381,10 +381,10 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
           onItemHeightChange?.(index, height, previousHeight);
 
           // Invalidate cache from this index onwards
-          // If item at index changes height, its top is same, but subsequent items shift.
+          // If item at index changes height, its offset is same, but subsequent items shift.
           // So valid range is up to index (inclusive), so first invalid is index + 1.
-          validTopIndexRef.current = Math.min(
-            validTopIndexRef.current,
+          validOffsetIndexRef.current = Math.min(
+            validOffsetIndexRef.current,
             index + 1,
           );
         }
@@ -434,8 +434,8 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
       setContentHeight(newContentHeight);
 
       // Reset cache to match new children
-      itemTopsRef.current = new Array(newItemKeys.length).fill(0);
-      validTopIndexRef.current = 0;
+      itemOffsetsRef.current = new Array(newItemKeys.length).fill(0);
+      validOffsetIndexRef.current = 0;
     }, [children]);
 
     // Effect: Clamp scroll position if it exceeds the new max scroll.
@@ -512,30 +512,31 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
             return null;
           }
 
-          // Lazy update of top positions
-          if (index >= validTopIndexRef.current) {
-            let currentTop = 0;
+          // Lazy update of item offsets
+          if (index >= validOffsetIndexRef.current) {
+            let currentOffset = 0;
             let startIndex = 0;
 
             // Optimization: continue from last valid position if possible
-            if (validTopIndexRef.current > 0) {
-              startIndex = validTopIndexRef.current;
+            if (validOffsetIndexRef.current > 0) {
+              startIndex = validOffsetIndexRef.current;
               const prevIndex = startIndex - 1;
               const prevKey = itemKeysRef.current[prevIndex] || prevIndex;
               const prevHeight = itemHeightsRef.current[prevKey] || 0;
-              currentTop = (itemTopsRef.current[prevIndex] ?? 0) + prevHeight;
+              currentOffset =
+                (itemOffsetsRef.current[prevIndex] ?? 0) + prevHeight;
             }
 
             for (let i = startIndex; i <= index; i++) {
-              itemTopsRef.current[i] = currentTop;
+              itemOffsetsRef.current[i] = currentOffset;
               const key = itemKeysRef.current[i] || i;
               const height = itemHeightsRef.current[key] || 0;
-              currentTop += height;
+              currentOffset += height;
             }
-            validTopIndexRef.current = index + 1;
+            validOffsetIndexRef.current = index + 1;
           }
 
-          const top = itemTopsRef.current[index] ?? 0;
+          const top = itemOffsetsRef.current[index] ?? 0;
           const key = itemKeysRef.current[index] || index;
           const height = itemHeightsRef.current[key] || 0;
           return { top, height };

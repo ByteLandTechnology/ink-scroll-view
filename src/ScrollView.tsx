@@ -29,33 +29,43 @@ export interface ScrollViewProps extends BoxProps {
   /**
    * Callback fired when the ScrollView viewport (visible area) dimensions change.
    *
-   * @param layout - The new dimensions of the viewport (width, height).
+   * @param size - The new dimensions of the viewport (width, height).
+   * @param previousSize - The previous dimensions of the viewport (width, height).
    *
    * @remarks
    * Fired whenever the outer container size changes (e.g., terminal resize or layout update).
    */
-  onViewportSizeChange?: (layout: { width: number; height: number }) => void;
+  onViewportSizeChange?: (
+    size: { width: number; height: number },
+    previousSize: { width: number; height: number },
+  ) => void;
 
   /**
    * Callback fired when the total height of the content changes.
    *
    * @param height - The new total content height.
+   * @param previousHeight - The previous total content height.
    *
    * @remarks
    * Useful for debug logging or adjusting external layouts based on content size.
    */
-  onContentHeightChange?: (height: number) => void;
+  onContentHeightChange?: (height: number, previousHeight: number) => void;
 
   /**
    * Callback fired when an individual child item's height changes.
    *
    * @param index - The index of the item.
    * @param height - The new height of the item.
+   * @param previousHeight - The previous height of the item.
    *
    * @remarks
    * This is triggered whenever an item is re-measured and its height differs from the previous value.
    */
-  onItemHeightChange?: (index: number, height: number) => void;
+  onItemHeightChange?: (
+    index: number,
+    height: number,
+    previousHeight: number,
+  ) => void;
 
   /**
    * The content to be scrolled.
@@ -140,8 +150,8 @@ export interface ScrollViewRef {
    * Gets the maximum possible scroll offset.
    *
    * @remarks
-   * This is calculated as `contentHeight - viewportHeight`. When the scroll
-   * offset equals this value, the content is scrolled to the very bottom.
+   * This is calculated as `contentHeight`. When the scroll
+   * offset equals this value, the content is scrolled fully out of view (top).
    * Returns 0 if the content fits within the viewport.
    *
    * @returns The maximum scroll offset in terminal rows.
@@ -158,10 +168,18 @@ export interface ScrollViewRef {
   /**
    * Gets the height of a specific item by its key.
    *
-   * @param key - The unique key of the item.
+   * @param index - The index of the item.
    * @returns The height of the item in terminal rows, or 0 if not found.
    */
-  getItemHeight: (key: string) => number | null;
+  getItemHeight: (index: number) => number | null;
+
+  /**
+   * Gets the position of a specific item.
+   *
+   * @param index - The index of the item.
+   * @returns The position (top offset) and height of the item, or null if not found.
+   */
+  getItemPosition: (index: number) => { top: number; height: number } | null;
 
   /**
    * Re-measures the ScrollView viewport dimensions.
@@ -317,10 +335,6 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
     // Total height of the scrollable content
     const [contentHeight, setContentHeight] = useState(0);
 
-    // Maximum allowable scroll offset
-    // The content cannot be scrolled past this point (where the bottom of content meets bottom of viewport).
-    const [maxScrollOffset, setMaxScrollOffset] = useState(0);
-
     // Per-item measure keys to force re-measurement of specific items
     const [itemMeasureKeys, setItemMeasureKeys] = useState<
       Record<number, number>
@@ -333,13 +347,13 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
      * 2. Immediately update state (contentHeight).
      * 3. Sync the ref (itemHeightsRef) for future lookups.
      */
-    const onItemMeasure = useCallback(
+    const handleItemMeasure = useCallback(
       (index: number, height: number) => {
-        const key = itemKeysRef.current[index];
+        const key = itemKeysRef.current[index] || index;
         // Only trigger update if height has effectively changed
-        if (key && itemHeightsRef.current[key] !== height) {
-          const oldHeight = itemHeightsRef.current[key] || 0;
-          const delta = height - oldHeight;
+        if (itemHeightsRef.current[key] !== height) {
+          const previousHeight = itemHeightsRef.current[key] || 0;
+          const delta = height - previousHeight;
 
           // Update total content height state
           setContentHeight((prev) => prev + delta);
@@ -351,7 +365,7 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
           };
 
           // Notify parent of height change
-          onItemHeightChange?.(index, height);
+          onItemHeightChange?.(index, height, previousHeight);
         }
       },
       [onItemHeightChange],
@@ -370,29 +384,8 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
       setViewportSize({ height, width });
     }, [viewportSize]);
 
-    useEffect(() => {
-      onContentHeightChange?.(contentHeight);
-    }, [contentHeight, onContentHeightChange]);
-
-    useEffect(() => {
-      onViewportSizeChange?.({
-        width: viewportSize.width,
-        height: viewportSize.height,
-      });
-    }, [viewportSize, onViewportSizeChange]);
-
-    // Effect: Recalculate max scroll offset when content or viewport changes.
-    // This defines the boundaries of the scrollable area.
-    useEffect(() => {
-      const newMaxOffset = Math.max(0, contentHeight - viewportSize.height);
-      if (newMaxOffset !== maxScrollOffset) {
-        setMaxScrollOffset(newMaxOffset);
-      }
-    }, [contentHeight, viewportSize.height, maxScrollOffset]);
-
     // Effect: Handle changes to the `children` prop.
-    // This rebuilds the item registry to ensure we don't hold onto stale items
-    // (e.g., if a child is removed, its height must be subtracted from contentHeight).
+    // This rebuilds the item registry and maintains scroll position.
     useEffect(() => {
       let newItemKeys: (string | number)[] = [];
       let newItemHeights: Record<string | number, number> = {};
@@ -424,18 +417,18 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
     // Example: Content shrinks significantly, and we were scrolled to the bottom.
     // We must "snap back" to the new bottom.
     useEffect(() => {
-      if (scrollOffset > maxScrollOffset) {
-        setScrollOffset(maxScrollOffset);
-        onScroll?.(maxScrollOffset);
+      if (scrollOffset > contentHeight) {
+        setScrollOffset(contentHeight);
+        onScroll?.(contentHeight);
       }
-    }, [maxScrollOffset, scrollOffset, onScroll]);
+    }, [contentHeight, scrollOffset, onScroll]);
 
     // Expose control methods to parent via ref
     useImperativeHandle(
       ref,
       () => ({
         scrollTo: (offset: number) => {
-          const newScrollTop = Math.max(0, Math.min(offset, maxScrollOffset));
+          const newScrollTop = Math.max(0, Math.min(offset, contentHeight));
           if (newScrollTop !== scrollOffset) {
             setScrollOffset(newScrollTop);
             onScroll?.(newScrollTop);
@@ -444,7 +437,7 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
         scrollBy: (delta: number) => {
           const newScrollTop = Math.max(
             0,
-            Math.min(scrollOffset + delta, maxScrollOffset),
+            Math.min(scrollOffset + delta, contentHeight),
           );
           if (newScrollTop !== scrollOffset) {
             setScrollOffset(newScrollTop);
@@ -458,15 +451,19 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
           }
         },
         scrollToBottom: () => {
-          if (scrollOffset !== maxScrollOffset) {
-            setScrollOffset(maxScrollOffset);
-            onScroll?.(maxScrollOffset);
+          const bottomOffset = Math.max(0, contentHeight - viewportSize.height);
+          if (scrollOffset !== bottomOffset) {
+            setScrollOffset(bottomOffset);
+            onScroll?.(bottomOffset);
           }
         },
         getScrollOffset: () => scrollOffset,
-        getMaxScrollOffset: () => maxScrollOffset,
+        getMaxScrollOffset: () => contentHeight,
         getViewportHeight: () => viewportSize.height,
-        getItemHeight: (key: string) => itemHeightsRef.current[key] || 0,
+        getItemHeight: (index: number) => {
+          const key = itemKeysRef.current[index] || index;
+          return itemHeightsRef.current[key] || 0;
+        },
         remeasure: () => {
           // Force re-measurement of the viewport
           if (viewportRef.current) {
@@ -485,8 +482,25 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
             ...prev,
             [index]: (prev[index] || 0) + 1,
           })),
+        getItemPosition: (index: number) => {
+          if (index < 0 || index >= itemKeysRef.current.length) {
+            return null;
+          }
+          let top = 0;
+          for (let i = 0; i < index; i++) {
+            const key = itemKeysRef.current[i] || i;
+            const height = itemHeightsRef.current[key] || 0;
+            if (height === 0) {
+              return null;
+            }
+            top += height;
+          }
+          const key = itemKeysRef.current[index] || index;
+          const height = itemHeightsRef.current[key] || 0;
+          return { top, height };
+        },
       }),
-      [scrollOffset, maxScrollOffset, viewportSize, onScroll],
+      [scrollOffset, contentHeight, viewportSize, onScroll],
     );
 
     return (
@@ -502,7 +516,7 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
                 key={child.key}
                 index={index}
                 width={viewportSize.width}
-                onMeasure={onItemMeasure}
+                onMeasure={handleItemMeasure}
                 measureKey={itemMeasureKeys[index]}
               >
                 {child}

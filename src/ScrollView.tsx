@@ -326,6 +326,19 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
      */
     const itemKeysRef = useRef<(string | number)[]>([]);
 
+    /**
+     * Cache of item top positions.
+     * Lazily updated in getItemPosition.
+     */
+    const itemTopsRef = useRef<number[]>([]);
+
+    /**
+     * The index of the first invalid item top position.
+     * 0 means no positions are valid.
+     * If validTopIndexRef.current is i, then itemTopsRef.current[0...i-1] are valid.
+     */
+    const validTopIndexRef = useRef<number>(0);
+
     // Viewport dimensions (visible area)
     const [viewportSize, setViewportSize] = useState({
       height: 0,
@@ -366,6 +379,14 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
 
           // Notify parent of height change
           onItemHeightChange?.(index, height, previousHeight);
+
+          // Invalidate cache from this index onwards
+          // If item at index changes height, its top is same, but subsequent items shift.
+          // So valid range is up to index (inclusive), so first invalid is index + 1.
+          validTopIndexRef.current = Math.min(
+            validTopIndexRef.current,
+            index + 1,
+          );
         }
       },
       [onItemHeightChange],
@@ -411,6 +432,10 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
       itemHeightsRef.current = newItemHeights;
       itemKeysRef.current = newItemKeys;
       setContentHeight(newContentHeight);
+
+      // Reset cache to match new children
+      itemTopsRef.current = new Array(newItemKeys.length).fill(0);
+      validTopIndexRef.current = 0;
     }, [children]);
 
     // Effect: Clamp scroll position if it exceeds the new max scroll.
@@ -486,15 +511,31 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
           if (index < 0 || index >= itemKeysRef.current.length) {
             return null;
           }
-          let top = 0;
-          for (let i = 0; i < index; i++) {
-            const key = itemKeysRef.current[i] || i;
-            const height = itemHeightsRef.current[key] || 0;
-            if (height === 0) {
-              return null;
+
+          // Lazy update of top positions
+          if (index >= validTopIndexRef.current) {
+            let currentTop = 0;
+            let startIndex = 0;
+
+            // Optimization: continue from last valid position if possible
+            if (validTopIndexRef.current > 0) {
+              startIndex = validTopIndexRef.current;
+              const prevIndex = startIndex - 1;
+              const prevKey = itemKeysRef.current[prevIndex] || prevIndex;
+              const prevHeight = itemHeightsRef.current[prevKey] || 0;
+              currentTop = (itemTopsRef.current[prevIndex] ?? 0) + prevHeight;
             }
-            top += height;
+
+            for (let i = startIndex; i <= index; i++) {
+              itemTopsRef.current[i] = currentTop;
+              const key = itemKeysRef.current[i] || i;
+              const height = itemHeightsRef.current[key] || 0;
+              currentTop += height;
+            }
+            validTopIndexRef.current = index + 1;
           }
+
+          const top = itemTopsRef.current[index] ?? 0;
           const key = itemKeysRef.current[index] || index;
           const height = itemHeightsRef.current[key] || 0;
           return { top, height };

@@ -11,41 +11,49 @@ A ScrollView component for Ink applications.
 ## Remarks
 
 Allows scrolling through content that exceeds the visible area of the terminal.
+It manages a virtual viewport and renders all children, but strictly controls
+their visibility using `overflow="hidden"` and `marginTop` offsets.
 
-**IMPORTANT**:
+**Features:**
 
-- This component does NOT handle user input (keyboard/mouse).
-  You must control scrolling via the exposed ref methods (e.g., using `useInput`).
-- This component does NOT automatically respond to terminal resize events.
-  The parent component must call [remeasure()](../interfaces/ScrollViewRef.md#remeasure)
-  when the terminal resizes or when child content changes dynamically.
+- ↕️ Vertical scrolling
+- 📏 Auto-measurement of child heights
+- 🎯 Imperative scrolling methods via ref
+- 🔁 Dynamic content support (adding/removing children)
+- 🖥️ Viewport resize handling (via manual `remeasure`)
+
+**Important Notes:**
+
+- This component does NOT typically handle keyboard input directly. Use a hook like `useInput` in a parent component and call `scrollBy` or `scrollTo`.
+- Children MUST generally have specific keys if you plan to dynamically update them, to ensure correct height tracking.
 
 ## Example
 
 ```tsx
-const scrollViewRef = useRef<ScrollViewRef>(null);
-const { stdout } = useStdout();
+import React, { useRef } from "react";
+import { Box, Text, useInput } from "ink";
+import { ScrollView, ScrollViewRef } from "ink-scroll-view";
 
-// Handle terminal resize
-useEffect(() => {
-  const handleResize = () => scrollViewRef.current?.remeasure();
-  stdout?.on("resize", handleResize);
-  return () => {
-    stdout?.off("resize", handleResize);
-  };
-}, [stdout]);
+const Demo = () => {
+  const scrollRef = useRef<ScrollViewRef>(null);
 
-// Handle keyboard input
-useInput((input, key) => {
-  if (key.upArrow) scrollViewRef.current?.scrollBy(-1);
-  if (key.downArrow) scrollViewRef.current?.scrollBy(1);
-});
+  useInput((input, key) => {
+    if (key.downArrow) {
+      scrollRef.current?.scrollBy(1);
+    }
+    if (key.upArrow) {
+      scrollRef.current?.scrollBy(-1);
+    }
+  });
 
-return (
-  <ScrollView ref={scrollViewRef} height={10}>
-    {items.map((item, i) => (
-      <Text key={i}>{item}</Text>
-    ))}
-  </ScrollView>
-);
+  return (
+    <Box height={10} borderStyle="single">
+      <ScrollView ref={scrollRef}>
+        {items.map((item) => (
+          <Text key={item.id}>{item.label}</Text>
+        ))}
+      </ScrollView>
+    </Box>
+  );
+};
 ```

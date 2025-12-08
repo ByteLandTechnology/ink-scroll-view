@@ -122,18 +122,19 @@ Inherits standard `BoxProps` from Ink.
 
 Access these via `ref.current`.
 
-| Method               | Signature                         | Description                                                                                                                |
-| :------------------- | :-------------------------------- | :------------------------------------------------------------------------------------------------------------------------- |
-| `scrollTo`           | `(offset: number) => void`        | Scrolls to an absolute Y offset from the top.                                                                              |
-| `scrollBy`           | `(delta: number) => void`         | Scrolls by a relative amount (negative = up, positive = down).                                                             |
-| `scrollToTop`        | `() => void`                      | Helper to scroll to offset 0.                                                                                              |
-| `scrollToBottom`     | `() => void`                      | Helper to scroll to the maximum possible offset.                                                                           |
-| `getScrollOffset`    | `() => number`                    | Returns the current scroll offset.                                                                                         |
-| `getMaxScrollOffset` | `() => number`                    | Returns the maximum valid scroll offset (`contentHeight - viewportHeight`).                                                |
-| `getViewportHeight`  | `() => number`                    | Returns the current height of the visible area.                                                                            |
-| `getItemHeight`      | `(key: string) => number \| null` | Returns the measured height of a specific item by its key.                                                                 |
-| `remeasure`          | `() => void`                      | Re-checks viewport dimensions. **Must call this on terminal resize.**                                                      |
-| `remeasureItem`      | `(index: number) => void`         | Forces a specific child to re-measure. Useful for dynamic content (expand/collapse) that doesn't trigger a full re-render. |
+| Method              | Signature                            | Description                                                                                                                |
+| :------------------ | :----------------------------------- | :------------------------------------------------------------------------------------------------------------------------- |
+| `scrollTo`          | `(offset: number) => void`           | Scrolls to an absolute Y offset from the top.                                                                              |
+| `scrollBy`          | `(delta: number) => void`            | Scrolls by a relative amount (negative = up, positive = down).                                                             |
+| `scrollToTop`       | `() => void`                         | Helper to scroll to offset 0.                                                                                              |
+| `scrollToBottom`    | `() => void`                         | Helper to scroll to the maximum possible offset (`contentHeight - viewportHeight`).                                        |
+| `getScrollOffset`   | `() => number`                       | Returns the current scroll offset.                                                                                         |
+| `getContentHeight`  | `() => number`                       | Returns the total height of all content items.                                                                             |
+| `getViewportHeight` | `() => number`                       | Returns the current height of the visible area.                                                                            |
+| `getItemHeight`     | `(index: number) => number`          | Returns the measured height of a specific item by its index.                                                               |
+| `getItemPosition`   | `(index: number) => { top, height }` | Returns the position (top offset) and height of a specific item.                                                           |
+| `remeasure`         | `() => void`                         | Re-checks viewport dimensions. **Must call this on terminal resize.**                                                      |
+| `remeasureItem`     | `(index: number) => void`            | Forces a specific child to re-measure. Useful for dynamic content (expand/collapse) that doesn't trigger a full re-render. |
 
 ## 💡 Tips
 

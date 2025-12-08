@@ -115,7 +115,10 @@ export interface ScrollViewRef {
   scrollToTop: () => void;
 
   /**
-   * Scrolls to the very bottom (maxScroll).
+   * Scrolls to the very bottom.
+   *
+   * @remarks
+   * This calculates the target offset as `contentHeight - viewportHeight`.
    */
   scrollToBottom: () => void;
 
@@ -127,36 +130,19 @@ export interface ScrollViewRef {
    * scrolled up from its initial position. A value of 0 means the content is
    * at the very top (no scrolling has occurred).
    *
-   * ```
-   * ┌─────────────────────────┐
-   * │  (hidden content)       │ ← Content above viewport
-   * │  ...                    │
-   * ├─────────────────────────┤ ← scrollOffset (distance from top)
-   * │  ┌───────────────────┐  │
-   * │  │ Visible Viewport  │  │ ← What user sees
-   * │  │                   │  │
-   * │  └───────────────────┘  │
-   * ├─────────────────────────┤
-   * │  (hidden content)       │ ← Content below viewport
-   * │  ...                    │
-   * └─────────────────────────┘
-   * ```
-   *
    * @returns The current scroll offset in terminal rows.
    */
   getScrollOffset: () => number;
 
   /**
-   * Gets the maximum possible scroll offset.
+   * Gets the total height of the content.
    *
    * @remarks
-   * This is calculated as `contentHeight`. When the scroll
-   * offset equals this value, the content is scrolled fully out of view (top).
-   * Returns 0 if the content fits within the viewport.
+   * This is the sum of the heights of all child items.
    *
-   * @returns The maximum scroll offset in terminal rows.
+   * @returns The total content height in terminal rows.
    */
-  getMaxScrollOffset: () => number;
+  getContentHeight: () => number;
 
   /**
    * Gets the current height of the visible viewport.
@@ -166,12 +152,12 @@ export interface ScrollViewRef {
   getViewportHeight: () => number;
 
   /**
-   * Gets the height of a specific item by its key.
+   * Gets the height of a specific item by its index.
    *
    * @param index - The index of the item.
    * @returns The height of the item in terminal rows, or 0 if not found.
    */
-  getItemHeight: (index: number) => number | null;
+  getItemHeight: (index: number) => number;
 
   /**
    * Gets the position of a specific item.
@@ -186,12 +172,11 @@ export interface ScrollViewRef {
    *
    * @remarks
    * Checks the current dimensions of the viewport and updates state if they have changed.
-   * This does not necessarily force a re-layout of children unless the viewport size changes.
-   * Use this manually if you suspect the terminal size or container size has changed.
+   * This is crucial for handling terminal resizes, as Ink does not automatically propagate resize events to components.
    *
    * @example
    * ```tsx
-   * // Handle terminal resize manually if needed
+   * // Handle terminal resize manually
    * useEffect(() => {
    *   const onResize = () => ref.current?.remeasure();
    *   process.stdout.on('resize', onResize);
@@ -207,7 +192,8 @@ export interface ScrollViewRef {
    * @param index - The index of the child to re-measure.
    *
    * @remarks
-   * Use this if a child's internal content changes size in a way that doesn't trigger a standard React render cycle update.
+   * Use this if a child's internal content changes size in a way that doesn't trigger a standard React render cycle update
+   * (e.g., internal state change within the child that affects its height).
    */
   remeasureItem: (index: number) => void;
 }
@@ -244,6 +230,29 @@ const MeasurableItem = ({
     </Box>
   );
 };
+
+/**
+ * Hook to manage state with immediate ref synchronization.
+ * Useful for values that need to be read synchronously in imperative methods
+ * but also trigger re-renders when changed.
+ */
+function useStateRef<T>(initialValue: T) {
+  const [state, setStateInternal] = useState<T>(initialValue);
+  const ref = useRef<T>(initialValue);
+
+  const setState = useCallback((update: React.SetStateAction<T>) => {
+    const nextValue =
+      typeof update === "function"
+        ? (update as (prev: T) => T)(ref.current)
+        : update;
+    ref.current = nextValue;
+    setStateInternal(nextValue);
+  }, []);
+
+  const getState = useCallback(() => ref.current, []);
+
+  return [state, setState, getState] as const;
+}
 
 /**
  * A ScrollView component for Ink applications.
@@ -307,8 +316,21 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
     ref,
   ) => {
     // Current scroll position (offset from top).
-    // Represents how many lines the content is shifted up.
-    const [scrollOffset, setScrollOffset] = useState(0);
+    const [scrollOffset, setScrollOffset, getScrollOffset] = useStateRef(0);
+
+    // Viewport dimensions (visible area)
+    const [viewportSize, setViewportSize, getViewportSize] = useStateRef({
+      height: 0,
+      width: 0,
+    });
+
+    // Total height of the scrollable content
+    const [contentHeight, setContentHeight, getContentHeight] = useStateRef(0);
+
+    // Per-item measure keys to force re-measurement of specific items
+    const [itemMeasureKeys, setItemMeasureKeys] = useState<
+      Record<number, number>
+    >({});
 
     const viewportRef = useRef<DOMElement>(null);
     const contentRef = useRef<DOMElement>(null);
@@ -335,23 +357,9 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
     /**
      * The index of the first invalid item offset position.
      * 0 means no positions are valid.
-     * If validOffsetIndexRef.current is i, then itemOffsetsRef.current[0...i-1] are valid.
+     * If firstInvalidOffsetIndexRef.current is i, then itemOffsetsRef.current[0...i-1] are valid.
      */
-    const validOffsetIndexRef = useRef<number>(0);
-
-    // Viewport dimensions (visible area)
-    const [viewportSize, setViewportSize] = useState({
-      height: 0,
-      width: 0,
-    });
-
-    // Total height of the scrollable content
-    const [contentHeight, setContentHeight] = useState(0);
-
-    // Per-item measure keys to force re-measurement of specific items
-    const [itemMeasureKeys, setItemMeasureKeys] = useState<
-      Record<number, number>
-    >({});
+    const firstInvalidOffsetIndexRef = useRef<number>(0);
 
     /**
      * Handler called by MeasurableItem when its size changes.
@@ -383,8 +391,8 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
           // Invalidate cache from this index onwards
           // If item at index changes height, its offset is same, but subsequent items shift.
           // So valid range is up to index (inclusive), so first invalid is index + 1.
-          validOffsetIndexRef.current = Math.min(
-            validOffsetIndexRef.current,
+          firstInvalidOffsetIndexRef.current = Math.min(
+            firstInvalidOffsetIndexRef.current,
             index + 1,
           );
         }
@@ -392,18 +400,19 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
       [onItemHeightChange],
     );
 
-    // Effect: Measure viewport dimensions on mount and updates
-    useEffect(() => {
-      if (!viewportRef.current) {
-        return;
+    const measureViewport = useCallback(() => {
+      if (viewportRef.current) {
+        const { width, height } = measureElement(viewportRef.current);
+        const currentSize = getViewportSize();
+        if (width !== currentSize.width || height !== currentSize.height) {
+          setViewportSize({ width, height });
+        }
       }
-      const { height, width } = measureElement(viewportRef.current);
-      // Only update state if dimensions actually changed to avoid unnecessary renders
-      if (height === viewportSize.height && width === viewportSize.width) {
-        return;
-      }
-      setViewportSize({ height, width });
-    }, [viewportSize]);
+    }, [viewportRef]);
+
+    useLayoutEffect(() => {
+      measureViewport();
+    });
 
     // Effect: Handle changes to the `children` prop.
     // This rebuilds the item registry and maintains scroll position.
@@ -435,7 +444,7 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
 
       // Reset cache to match new children
       itemOffsetsRef.current = new Array(newItemKeys.length).fill(0);
-      validOffsetIndexRef.current = 0;
+      firstInvalidOffsetIndexRef.current = 0;
     }, [children]);
 
     // Effect: Clamp scroll position if it exceeds the new max scroll.
@@ -446,61 +455,58 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
         setScrollOffset(contentHeight);
         onScroll?.(contentHeight);
       }
-    }, [contentHeight, scrollOffset, onScroll]);
+    }, [contentHeight, scrollOffset, onScroll, setScrollOffset]);
 
     // Expose control methods to parent via ref
     useImperativeHandle(
       ref,
       () => ({
         scrollTo: (offset: number) => {
-          const newScrollTop = Math.max(0, Math.min(offset, contentHeight));
-          if (newScrollTop !== scrollOffset) {
+          const currentContentHeight = getContentHeight();
+          const newScrollTop = Math.max(
+            0,
+            Math.min(offset, currentContentHeight),
+          );
+          if (newScrollTop !== getScrollOffset()) {
             setScrollOffset(newScrollTop);
             onScroll?.(newScrollTop);
           }
         },
         scrollBy: (delta: number) => {
+          const currentContentHeight = getContentHeight();
           const newScrollTop = Math.max(
             0,
-            Math.min(scrollOffset + delta, contentHeight),
+            Math.min(getScrollOffset() + delta, currentContentHeight),
           );
-          if (newScrollTop !== scrollOffset) {
+          if (newScrollTop !== getScrollOffset()) {
             setScrollOffset(newScrollTop);
             onScroll?.(newScrollTop);
           }
         },
         scrollToTop: () => {
-          if (scrollOffset !== 0) {
+          if (getScrollOffset() !== 0) {
             setScrollOffset(0);
             onScroll?.(0);
           }
         },
         scrollToBottom: () => {
-          const bottomOffset = Math.max(0, contentHeight - viewportSize.height);
-          if (scrollOffset !== bottomOffset) {
+          const bottomOffset = Math.max(
+            0,
+            getContentHeight() - getViewportSize().height,
+          );
+          if (getScrollOffset() !== bottomOffset) {
             setScrollOffset(bottomOffset);
             onScroll?.(bottomOffset);
           }
         },
-        getScrollOffset: () => scrollOffset,
-        getMaxScrollOffset: () => contentHeight,
-        getViewportHeight: () => viewportSize.height,
+        getScrollOffset,
+        getContentHeight,
+        getViewportHeight: () => getViewportSize().height,
         getItemHeight: (index: number) => {
           const key = itemKeysRef.current[index] || index;
           return itemHeightsRef.current[key] || 0;
         },
-        remeasure: () => {
-          // Force re-measurement of the viewport
-          if (viewportRef.current) {
-            const { width, height } = measureElement(viewportRef.current);
-            if (
-              width !== viewportSize.width ||
-              height !== viewportSize.height
-            ) {
-              setViewportSize({ width, height });
-            }
-          }
-        },
+        remeasure: measureViewport,
         remeasureItem: (index: number) =>
           // Trigger re-measurement of child at specific index
           setItemMeasureKeys((prev) => ({
@@ -513,13 +519,13 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
           }
 
           // Lazy update of item offsets
-          if (index >= validOffsetIndexRef.current) {
+          if (index >= firstInvalidOffsetIndexRef.current) {
             let currentOffset = 0;
             let startIndex = 0;
 
             // Optimization: continue from last valid position if possible
-            if (validOffsetIndexRef.current > 0) {
-              startIndex = validOffsetIndexRef.current;
+            if (firstInvalidOffsetIndexRef.current > 0) {
+              startIndex = firstInvalidOffsetIndexRef.current;
               const prevIndex = startIndex - 1;
               const prevKey = itemKeysRef.current[prevIndex] || prevIndex;
               const prevHeight = itemHeightsRef.current[prevKey] || 0;
@@ -533,7 +539,7 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
               const height = itemHeightsRef.current[key] || 0;
               currentOffset += height;
             }
-            validOffsetIndexRef.current = index + 1;
+            firstInvalidOffsetIndexRef.current = index + 1;
           }
 
           const top = itemOffsetsRef.current[index] ?? 0;
@@ -542,7 +548,7 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
           return { top, height };
         },
       }),
-      [scrollOffset, contentHeight, viewportSize, onScroll],
+      [onScroll],
     );
 
     return (

@@ -25,7 +25,7 @@ const Demo = () => {
     if (scrollRef.current) {
       setScrollInfo({
         scroll: scrollRef.current.getScrollOffset(),
-        max: scrollRef.current.getMaxScrollOffset(),
+        max: scrollRef.current.getBottomOffset(),
       });
     }
   }, []);

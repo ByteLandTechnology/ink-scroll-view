@@ -131,6 +131,7 @@ Access these via `ref.current`.
 | `getScrollOffset`   | `() => number`                       | Returns the current scroll offset.                                                                                         |
 | `getContentHeight`  | `() => number`                       | Returns the total height of all content items.                                                                             |
 | `getViewportHeight` | `() => number`                       | Returns the current height of the visible area.                                                                            |
+| `getBottomOffset`   | `() => number`                       | Returns the scroll offset when scrolled to the bottom (`contentHeight - viewportHeight`).                                  |
 | `getItemHeight`     | `(index: number) => number`          | Returns the measured height of a specific item by its index.                                                               |
 | `getItemPosition`   | `(index: number) => { top, height }` | Returns the position (top offset) and height of a specific item.                                                           |
 | `remeasure`         | `() => void`                         | Re-checks viewport dimensions. **Must call this on terminal resize.**                                                      |

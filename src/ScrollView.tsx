@@ -164,6 +164,18 @@ export interface ScrollViewRef {
   getViewportHeight: () => number;
 
   /**
+   * Gets the scroll offset when the content is scrolled to the very bottom.
+   *
+   * @remarks
+   * This is calculated as `contentHeight - viewportHeight`. When the scroll
+   * offset equals this value, the last item of the content is visible at the
+   * bottom of the viewport.
+   *
+   * @returns The bottom scroll offset in terminal rows.
+   */
+  getBottomOffset: () => number;
+
+  /**
    * Gets the height of a specific item by its index.
    *
    * @param index - The index of the item.
@@ -470,6 +482,12 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
       }
     }, [contentHeight, scrollOffset, onScroll, setScrollOffset]);
 
+    // Helper to calculate the bottom scroll offset
+    const getBottomOffset = useCallback(
+      () => Math.max(0, getContentHeight() - getViewportSize().height),
+      [],
+    );
+
     // Expose control methods to parent via ref
     useImperativeHandle(
       ref,
@@ -503,10 +521,7 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
           }
         },
         scrollToBottom: () => {
-          const bottomOffset = Math.max(
-            0,
-            getContentHeight() - getViewportSize().height,
-          );
+          const bottomOffset = getBottomOffset();
           if (getScrollOffset() !== bottomOffset) {
             setScrollOffset(bottomOffset);
             onScroll?.(bottomOffset);
@@ -515,6 +530,7 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
         getScrollOffset,
         getContentHeight,
         getViewportHeight: () => getViewportSize().height,
+        getBottomOffset,
         getItemHeight: (index: number) => {
           const key = itemKeysRef.current[index] || index;
           return itemHeightsRef.current[key] || 0;

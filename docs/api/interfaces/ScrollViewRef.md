@@ -8,6 +8,26 @@ Ref interface for controlling the ScrollView programmatically.
 
 ## Properties
 
+### getBottomOffset()
+
+> **getBottomOffset**: () => `number`
+
+Gets the scroll offset when the content is scrolled to the very bottom.
+
+#### Returns
+
+`number`
+
+The bottom scroll offset in terminal rows.
+
+#### Remarks
+
+This is calculated as `contentHeight - viewportHeight`. When the scroll
+offset equals this value, the last item of the content is visible at the
+bottom of the viewport.
+
+---
+
 ### getContentHeight()
 
 > **getContentHeight**: () => `number`

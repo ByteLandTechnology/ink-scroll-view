@@ -376,7 +376,7 @@ false;
 
 ### children
 
-> **children**: `ReactElement`\<`unknown`, `string` \| `JSXElementConstructor`\<`any`\>\>[]
+> **children**: `ReactElement`\<`unknown`, `string` \| `JSXElementConstructor`\<`any`\>\> \| `ReactElement`\<`unknown`, `string` \| `JSXElementConstructor`\<`any`\>\>[]
 
 The content to be scrolled.
 
@@ -396,6 +396,20 @@ Size of the gap between an element's columns.
 #### Inherited from
 
 `BoxProps.columnGap`
+
+---
+
+### debug?
+
+> `optional` **debug**: `boolean`
+
+Enable debug mode to visualize the ScrollView internals.
+
+#### Remarks
+
+When enabled, the viewport overflow is not hidden, allowing the full content
+to be visible. This is useful for inspecting the layout and verifying
+that content is being rendered correctly off-screen.
 
 ---
 

@@ -6,6 +6,8 @@ import React, {
   useImperativeHandle,
   useLayoutEffect,
   useCallback,
+  ReactElement,
+  Children,
 } from "react";
 import { Box, BoxProps, measureElement, DOMElement } from "ink";
 
@@ -68,13 +70,23 @@ export interface ScrollViewProps extends BoxProps {
   ) => void;
 
   /**
+   * Enable debug mode to visualize the ScrollView internals.
+   *
+   * @remarks
+   * When enabled, the viewport overflow is not hidden, allowing the full content
+   * to be visible. This is useful for inspecting the layout and verifying
+   * that content is being rendered correctly off-screen.
+   */
+  debug?: boolean;
+
+  /**
    * The content to be scrolled.
    *
    * @remarks
    * Accepts an array of React elements. Each element should have a unique `key`
    * prop, which will be preserved during rendering for proper reconciliation.
    */
-  children: React.ReactElement[];
+  children: ReactElement[] | ReactElement;
 }
 
 /**
@@ -310,6 +322,7 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
       onViewportSizeChange,
       onContentHeightChange,
       onItemHeightChange,
+      debug = false,
       children,
       ...boxProps
     },
@@ -422,7 +435,7 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
       let newContentHeight = 0;
 
       // Itereate over new children to preserve existing heights where possible
-      React.Children.forEach(children, (child, index) => {
+      Children.forEach(children, (child, index) => {
         if (child.key && newItemHeights[child.key] === undefined) {
           // If child has a key, try to preserve its known height
           const itemHeight = itemHeightsRef.current[child.key] || 0;
@@ -552,24 +565,26 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
     );
 
     return (
-      <Box ref={viewportRef} {...boxProps}>
-        <Box overflow="hidden">
-          <Box
-            ref={contentRef}
-            flexDirection="column"
-            marginTop={-scrollOffset}
-          >
-            {React.Children.map(children, (child, index) => (
-              <MeasurableItem
-                key={child.key}
-                index={index}
-                width={viewportSize.width}
-                onMeasure={handleItemMeasure}
-                measureKey={itemMeasureKeys[index]}
-              >
-                {child}
-              </MeasurableItem>
-            ))}
+      <Box {...boxProps}>
+        <Box ref={viewportRef} width="100%">
+          <Box overflow={debug ? undefined : "hidden"}>
+            <Box
+              ref={contentRef}
+              flexDirection="column"
+              marginTop={-scrollOffset}
+            >
+              {Children.map(children, (child, index) => (
+                <MeasurableItem
+                  key={child.key}
+                  index={index}
+                  width={viewportSize.width}
+                  onMeasure={handleItemMeasure}
+                  measureKey={itemMeasureKeys[index]}
+                >
+                  {child}
+                </MeasurableItem>
+              ))}
+            </Box>
           </Box>
         </Box>
       </Box>

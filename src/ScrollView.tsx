@@ -402,7 +402,12 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
           const delta = height - previousHeight;
 
           // Update total content height state
-          setContentHeight((prev) => prev + delta);
+          setContentHeight((prev) => {
+            const newHeight = prev + delta;
+            // Notify parent of content height change
+            onContentHeightChange?.(newHeight, prev);
+            return newHeight;
+          });
 
           // Update item height in ref
           itemHeightsRef.current = {
@@ -422,7 +427,7 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
           );
         }
       },
-      [onItemHeightChange],
+      [onItemHeightChange, onContentHeightChange],
     );
 
     const measureViewport = useCallback(() => {
@@ -430,10 +435,12 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
         const { width, height } = measureElement(viewportRef.current);
         const currentSize = getViewportSize();
         if (width !== currentSize.width || height !== currentSize.height) {
+          // Notify parent of viewport size change
+          onViewportSizeChange?.({ width, height }, currentSize);
           setViewportSize({ width, height });
         }
       }
-    }, [viewportRef]);
+    }, [viewportRef, onViewportSizeChange, getViewportSize, setViewportSize]);
 
     useLayoutEffect(() => {
       measureViewport();
@@ -465,12 +472,18 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
       // Update refs and state with the new list of items
       itemHeightsRef.current = newItemHeights;
       itemKeysRef.current = newItemKeys;
-      setContentHeight(newContentHeight);
+
+      // Notify parent of content height change
+      const previousHeight = getContentHeight();
+      if (newContentHeight !== previousHeight) {
+        setContentHeight(newContentHeight);
+        onContentHeightChange?.(newContentHeight, previousHeight);
+      }
 
       // Reset cache to match new children
       itemOffsetsRef.current = new Array(newItemKeys.length).fill(0);
       firstInvalidOffsetIndexRef.current = 0;
-    }, [children]);
+    }, [children, getContentHeight, onContentHeightChange]);
 
     // Effect: Clamp scroll position if it exceeds the new max scroll.
     // Example: Content shrinks significantly, and we were scrolled to the bottom.

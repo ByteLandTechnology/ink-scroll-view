@@ -6,8 +6,9 @@ import React, {
   useImperativeHandle,
   useLayoutEffect,
   useCallback,
-  ReactElement,
   Children,
+  ReactNode,
+  isValidElement,
 } from "react";
 import { Box, BoxProps, measureElement, DOMElement } from "ink";
 
@@ -86,7 +87,7 @@ export interface ScrollViewProps extends BoxProps {
    * Accepts an array of React elements. Each element should have a unique `key`
    * prop, which will be preserved during rendering for proper reconciliation.
    */
-  children: ReactElement[] | ReactElement;
+  children?: ReactNode;
 }
 
 /**
@@ -233,7 +234,7 @@ const MeasurableItem = ({
   width,
   measureKey,
 }: {
-  children: React.ReactElement;
+  children: ReactNode;
   onMeasure: (index: number, height: number) => void;
   index: number;
   width: number;
@@ -246,7 +247,7 @@ const MeasurableItem = ({
       const { height } = measureElement(ref.current);
       onMeasure(index, height);
     }
-  }, [index, onMeasure, width, measureKey]);
+  }, [index, onMeasure, width, measureKey, children]);
 
   return (
     <Box ref={ref} flexShrink={0} width="100%">
@@ -360,6 +361,16 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
     const viewportRef = useRef<DOMElement>(null);
     const contentRef = useRef<DOMElement>(null);
 
+    // Track previous content height to fire the change callback
+    const prevContentHeightRef = useRef(0);
+
+    useLayoutEffect(() => {
+      if (contentHeight !== prevContentHeightRef.current) {
+        onContentHeightChange?.(contentHeight, prevContentHeightRef.current);
+        prevContentHeightRef.current = contentHeight;
+      }
+    }, [contentHeight, onContentHeightChange]);
+
     /**
      * Map of item keys/indices to their measured heights.
      * We use a Ref instead of State to allow "optimistic" updates inside
@@ -399,23 +410,27 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
         // Only trigger update if height has effectively changed
         if (itemHeightsRef.current[key] !== height) {
           const previousHeight = itemHeightsRef.current[key] || 0;
-          const delta = height - previousHeight;
 
-          // Update total content height state
-          setContentHeight((prev) => {
-            const newHeight = prev + delta;
-            // Notify parent of content height change
-            onContentHeightChange?.(newHeight, prev);
-            return newHeight;
-          });
-
-          // Update item height in ref
+          // Update item height in ref first
           itemHeightsRef.current = {
             ...itemHeightsRef.current,
             [key]: height,
           };
 
-          // Notify parent of height change
+          // Recalculate total content height from all items
+          // This ensures consistency when children change
+          let newTotalHeight = 0;
+          for (const itemKey of itemKeysRef.current) {
+            newTotalHeight += itemHeightsRef.current[itemKey] || 0;
+          }
+
+          // Update total content height state
+          const currentHeight = getContentHeight();
+          if (newTotalHeight !== currentHeight) {
+            setContentHeight(newTotalHeight);
+          }
+
+          // Notify parent of item height change
           onItemHeightChange?.(index, height, previousHeight);
 
           // Invalidate cache from this index onwards
@@ -427,7 +442,12 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
           );
         }
       },
-      [onItemHeightChange, onContentHeightChange],
+      [
+        onItemHeightChange,
+        onContentHeightChange,
+        getContentHeight,
+        setContentHeight,
+      ],
     );
 
     const measureViewport = useCallback(() => {
@@ -446,44 +466,56 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
       measureViewport();
     });
 
-    // Effect: Handle changes to the `children` prop.
-    // This rebuilds the item registry and maintains scroll position.
-    useEffect(() => {
-      let newItemKeys: (string | number)[] = [];
-      let newItemHeights: Record<string | number, number> = {};
-      let newContentHeight = 0;
+    // Synchronously rebuild item registry when children change.
+    // This MUST happen during render (not in an effect) to ensure
+    // itemKeysRef is updated before MeasurableItem's useLayoutEffect runs.
+    const prevChildrenRef = useRef<typeof children>(null);
+    if (prevChildrenRef.current !== children) {
+      prevChildrenRef.current = children;
 
-      // Itereate over new children to preserve existing heights where possible
+      const newItemKeys: (string | number)[] = [];
+      const newItemHeights: Record<string | number, number> = {};
+
+      // Iterate over new children to preserve existing heights where possible
       Children.forEach(children, (child, index) => {
-        if (child.key && newItemHeights[child.key] === undefined) {
-          // If child has a key, try to preserve its known height
-          const itemHeight = itemHeightsRef.current[child.key] || 0;
-          newItemKeys.push(child.key);
-          newItemHeights[child.key] = itemHeight;
-          newContentHeight += itemHeight;
-        } else {
-          // If no key (or fallback), use index-based tracking (reset height to 0 to be safe until measured)
-          newItemKeys.push(index);
-          newItemHeights[index] = 0;
-          newContentHeight += 0;
+        if (!child) {
+          return;
         }
+        const key = isValidElement(child) ? child.key : null;
+        const effectiveKey = key !== null ? key : index;
+
+        // Use direct index assignment to ensure alignment with Children.map
+        // which iterates over all children including nulls
+        newItemKeys[index] = effectiveKey;
+
+        // Preserve known height
+        const itemHeight = itemHeightsRef.current[effectiveKey] || 0;
+        newItemHeights[effectiveKey] = itemHeight;
       });
 
-      // Update refs and state with the new list of items
+      // Update refs with the new list of items
       itemHeightsRef.current = newItemHeights;
       itemKeysRef.current = newItemKeys;
 
-      // Notify parent of content height change
-      const previousHeight = getContentHeight();
-      if (newContentHeight !== previousHeight) {
-        setContentHeight(newContentHeight);
-        onContentHeightChange?.(newContentHeight, previousHeight);
-      }
-
-      // Reset cache to match new children
+      // Reset offset cache to match new children
+      // The length of itemOffsetsRef should match the max index found + 1 (or newItemKeys.length)
       itemOffsetsRef.current = new Array(newItemKeys.length).fill(0);
       firstInvalidOffsetIndexRef.current = 0;
-    }, [children, getContentHeight, onContentHeightChange]);
+
+      // Calculate new total height from known items
+      let newTotalHeight = 0;
+      // Iterate using forEach to skip empty slots in the sparse array
+      newItemKeys.forEach((itemKey) => {
+        newTotalHeight += newItemHeights[itemKey] || 0;
+      });
+
+      // Update total content height state if it changed
+      // Note: This happens during render, so React will restart the render with the new state
+      const currentHeight = getContentHeight();
+      if (newTotalHeight !== currentHeight) {
+        setContentHeight(newTotalHeight);
+      }
+    }
 
     // Effect: Clamp scroll position if it exceeds the new max scroll.
     // Example: Content shrinks significantly, and we were scrolled to the bottom.
@@ -506,6 +538,9 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
       ref,
       () => ({
         scrollTo: (offset: number) => {
+          if (typeof offset !== "number" || isNaN(offset)) {
+            return;
+          }
           const currentContentHeight = getContentHeight();
           const newScrollTop = Math.max(
             0,
@@ -517,6 +552,9 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
           }
         },
         scrollBy: (delta: number) => {
+          if (typeof delta !== "number" || isNaN(delta)) {
+            return;
+          }
           const currentContentHeight = getContentHeight();
           const newScrollTop = Math.max(
             0,
@@ -602,17 +640,22 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
               flexDirection="column"
               marginTop={-scrollOffset}
             >
-              {Children.map(children, (child, index) => (
-                <MeasurableItem
-                  key={child.key}
-                  index={index}
-                  width={viewportSize.width}
-                  onMeasure={handleItemMeasure}
-                  measureKey={itemMeasureKeys[index]}
-                >
-                  {child}
-                </MeasurableItem>
-              ))}
+              {Children.map(children, (child, index) => {
+                if (!child) {
+                  return null;
+                }
+                return (
+                  <MeasurableItem
+                    key={isValidElement(child) ? child.key || index : index}
+                    index={index}
+                    width={viewportSize.width}
+                    onMeasure={handleItemMeasure}
+                    measureKey={itemMeasureKeys[index]}
+                  >
+                    {child}
+                  </MeasurableItem>
+                );
+              })}
             </Box>
           </Box>
         </Box>

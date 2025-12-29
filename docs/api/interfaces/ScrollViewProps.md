@@ -374,9 +374,9 @@ false;
 
 ---
 
-### children
+### children?
 
-> **children**: `ReactElement`\<`unknown`, `string` \| `JSXElementConstructor`\<`any`\>\> \| `ReactElement`\<`unknown`, `string` \| `JSXElementConstructor`\<`any`\>\>[]
+> `optional` **children**: `ReactNode`
 
 The content to be scrolled.
 

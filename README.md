@@ -133,14 +133,14 @@ For detailed API documentation, see [API Reference](docs/api/README.md).
 
 Inherits standard `BoxProps` from Ink.
 
-| Prop                    | Type                                      | Description                                                                         |
-| :---------------------- | :---------------------------------------- | :---------------------------------------------------------------------------------- |
-| `children`              | `ReactElement[]`                          | **Required**. List of child elements. **Must use unique `key`s** (strings/numbers). |
-| `onScroll`              | `(offset: number) => void`                | Called when scroll position changes.                                                |
-| `onViewportSizeChange`  | `(layout: { width, height }) => void`     | Called when the **viewport** dimensions change.                                     |
-| `onContentHeightChange` | `(height: number) => void`                | Called when the total content height changes.                                       |
-| `onItemHeightChange`    | `(index: number, height: number) => void` | Called when an individual item's height changes.                                    |
-| ...                     | `BoxProps`                                | Any other prop accepted by Ink's `Box`.                                             |
+| Prop                    | Type                                      | Description                                                                     |
+| :---------------------- | :---------------------------------------- | :------------------------------------------------------------------------------ |
+| `children`              | `ReactNode`                               | Optional. List of child elements. **Must use unique `key`s** (strings/numbers). |
+| `onScroll`              | `(offset: number) => void`                | Called when scroll position changes.                                            |
+| `onViewportSizeChange`  | `(layout: { width, height }) => void`     | Called when the **viewport** dimensions change.                                 |
+| `onContentHeightChange` | `(height: number) => void`                | Called when the total content height changes.                                   |
+| `onItemHeightChange`    | `(index, height, previousHeight) => void` | Called when an individual item's height changes.                                |
+| ...                     | `BoxProps`                                | Any other prop accepted by Ink's `Box`.                                         |
 
 ### Ref Methods (`ScrollViewRef`)
 

@@ -1,6 +1,6 @@
 {
   "name": "ink-scroll-view",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "A ScrollView component for Ink CLI applications",
   "keywords": [
     "react",

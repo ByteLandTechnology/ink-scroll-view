@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
-    "build": "next build --webpack",
+    "build": "next build --webpack && pagefind --site out/ --output-path out/_pagefind",
     "start": "next start --webpack",
     "lint": "eslint"
   },
@@ -34,6 +34,7 @@
     "eslint-config-next": "16.1.1",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
+    "pagefind": "^1.4.0",
     "prettier": "^3.7.4",
     "tailwindcss": "^4",
     "typescript": "^5"

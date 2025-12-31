@@ -1,0 +1,49 @@
+{
+  "name": "docs.byteland.app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --webpack",
+    "build": "next build --webpack",
+    "start": "next start --webpack",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@byteland/ink-scroll-bar": "^0.1.1",
+    "buffer": "^6.0.3",
+    "events": "^3.3.0",
+    "ink": "^6.6.0",
+    "ink-canvas": "^0.4.3",
+    "ink-scroll-view": "file:..",
+    "next": "16.1.1",
+    "nextra": "^4.6.1",
+    "nextra-theme-docs": "^4.6.1",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-icons": "^5.5.0"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^20.2.0",
+    "@commitlint/config-conventional": "^20.2.0",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.7.4",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
+  },
+  "lint-staged": {
+    "*.{js,ts,jsx,tsx,json,md,yaml,yml}": "prettier --write"
+  }
+}

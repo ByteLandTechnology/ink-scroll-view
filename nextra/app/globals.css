@@ -1,0 +1,169 @@
+/**
+ * @file globals.css
+ * @description Global CSS styles
+ *
+ * Contains custom utility classes used across the application.
+ * The main theme colors and typography are handled by Nextra's built-in theme system.
+ */
+
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+/**
+ * ByteLand Tri-Color Gradient - Text
+ *
+ * Creates a gradient text effect using the three ByteLand brand colors:
+ * - Blue (#007aff)
+ * - Green (#34c759)
+ * - Red (#ff3b30)
+ *
+ * Usage: <span className="text-gradient-tri">Text</span>
+ */
+.text-gradient-tri {
+  background: linear-gradient(to right, #007aff, #34c759, #ff3b30);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/**
+ * ByteLand Tri-Color Gradient - Background
+ *
+ * Creates a gradient background using the three ByteLand brand colors.
+ *
+ * Usage: <div className="bg-gradient-tri">Content</div>
+ */
+.bg-gradient-tri {
+  background: linear-gradient(to right, #007aff, #34c759, #ff3b30);
+}
+
+/**
+ * Custom Spin Animation
+ * 
+ * Uses a CSS variable for duration to allow smooth acceleration
+ * without resetting the animation position.
+ */
+.animate-spin-custom {
+  --spin-duration: 10s;
+  animation: spin var(--spin-duration) linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/**
+ * Shine Effect
+ * 
+ * Creates a subtle animated shine/glare effect on elements.
+ * Great for highlighting cards and important UI elements.
+ */
+.shine-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.shine-effect::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(255, 255, 255, 0.03) 50%,
+    transparent 100%
+  );
+  transform: rotate(30deg);
+  animation: shine 8s ease-in-out infinite;
+}
+
+@keyframes shine {
+  0%,
+  100% {
+    transform: rotate(30deg) translateX(-100%);
+  }
+  50% {
+    transform: rotate(30deg) translateX(100%);
+  }
+}
+
+/**
+ * Glow Effect for Demo Cards
+ * 
+ * Adds a subtle gradient glow effect on hover
+ */
+.demo-glow {
+  position: relative;
+}
+
+.demo-glow::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(135deg, #007aff33, #34c75933, #ff3b3033);
+  border-radius: inherit;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.demo-glow:hover::before {
+  opacity: 1;
+}
+
+/**
+ * Gradient Border Effect
+ * 
+ * Creates a gradient border effect using pseudo-element
+ */
+.gradient-border {
+  position: relative;
+  background: #0a0a0f;
+}
+
+.gradient-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, #007aff, #34c759, #ff3b30);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/**
+ * Pulse Glow Animation
+ * 
+ * Subtle pulsing glow effect for active elements
+ */
+.pulse-glow {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 5px rgba(0, 122, 255, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 0 20px rgba(0, 122, 255, 0.5),
+      0 0 30px rgba(52, 199, 89, 0.3);
+  }
+}

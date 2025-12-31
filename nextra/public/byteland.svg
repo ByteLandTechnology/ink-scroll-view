@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="0 10 160 160" width="160" height="160" xmlns="http://www.w3.org/2000/svg" xmlns:bx="https://boxy-svg.com">
+  <path
+    style="stroke: rgb(0, 0, 0); stroke-width: 0px; filter: none; fill: #FF3B30; transform-origin: 244.868px 144.653px;"
+    transform="matrix(1, 0.000038000009, -0.045962005854, 0.999997913837, -168.868009190224, -54.653743213001)"
+    d="M 185.797 154.656 H 250.18 A 15.617 15.617 0 0 1 265.797 170.273 V 186.622 H 201.414 A 15.617 15.617 0 0 1 185.797 171.005 V 154.656 Z"
+    bx:shape="rect 185.797 154.656 80 31.966 0 15.617 0 15.617 1@54404404">
+    <title>Red Leaf</title>
+    <animateTransform type="rotate" additive="sum" attributeName="transform" values="41;401" dur="2s" fill="freeze"
+      keyTimes="0; 1" repeatCount="indefinite" />
+  </path>
+  <path
+    style="stroke: rgb(0, 0, 0); stroke-width: 0px; filter: none; fill: #007AFF; transform-origin: 125.461px 46.001px;"
+    transform="matrix(1, -0.000035000008, 0.045961000025, 0.999997913837, -49.459615860936, 43.99966710378)"
+    d="M 64 56.001 H 127.607 A 16.393 15.983 0 0 1 144 71.984 V 87.967 H 80.393 A 16.393 15.983 0 0 1 64 71.984 V 56.001 Z"
+    bx:shape="rect 64 56.001 80 31.966 0 16.393 0 16.393 1@9a403905">
+    <title>Blue Leaf</title>
+    <animateTransform type="rotate" additive="sum" attributeName="transform" values="161;521" dur="2s" fill="freeze"
+      keyTimes="0; 1" repeatCount="indefinite" />
+  </path>
+  <path
+    style="stroke: rgb(0, 0, 0); stroke-width: 0px; stroke-linejoin: round; filter: none; fill: #34C759; transform-origin: 137.541px 120.624px;"
+    d="M 76.541 130.588 H 140.541 A 16 16 0 0 1 156.541 146.588 V 162.588 H 92.541 A 16 16 0 0 1 76.541 146.588 V 130.588 Z"
+    transform="matrix(1, 0.000001, -0.000001, 1, -61.540953143559, -30.587936189438)"
+    bx:shape="rect 76.541 130.588 80 32 0 16 0 16 1@f776250d">
+    <title>Green Leaf</title>
+    <animateTransform type="rotate" additive="sum" attributeName="transform" values="281;641" dur="2s" fill="freeze"
+      keyTimes="0; 1" repeatCount="indefinite" />
+  </path>
+</svg>

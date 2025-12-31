@@ -2,8 +2,13 @@
 
 A robust, performance-optimized ScrollView component for [Ink](https://github.com/vadimdemedes/ink) CLI applications.
 
-![License](https://img.shields.io/npm/l/ink-scroll-view)
-![Version](https://img.shields.io/npm/v/ink-scroll-view)
+![License](https://img.shields.io/npm/l/ink-scroll-view?style=flat-square) ![Version](https://img.shields.io/npm/v/ink-scroll-view?style=flat-square) ![Downloads](https://img.shields.io/npm/d18m/ink-scroll-view?style=flat-square)
+
+Visit the [**Project Website**](https://ink-scroll-view.byteland.app).
+
+## 📘 Documentation
+
+Read the [**Documentation**](https://ink-scroll-view.byteland.app/docs).
 
 ## ✨ Features
 
@@ -16,6 +21,8 @@ A robust, performance-optimized ScrollView component for [Ink](https://github.co
 - **⚓️ Layout Stability**: Includes logic to maintain scroll position context when content changes.
 
 ## 🎬 Demos
+
+Try the interactive [**Showcase**](https://ink-scroll-view.byteland.app/showcase).
 
 ### Scrolling
 

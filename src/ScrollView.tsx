@@ -1,16 +1,16 @@
 import React, {
   useState,
   useRef,
-  useEffect,
   forwardRef,
   useImperativeHandle,
-  useLayoutEffect,
   useCallback,
-  Children,
   ReactNode,
-  isValidElement,
 } from "react";
-import { Box, BoxProps, measureElement, DOMElement } from "ink";
+import { BoxProps } from "ink";
+import {
+  ControlledScrollView,
+  ControlledScrollViewRef,
+} from "./ControlledScrollView";
 
 /**
  * Props for the ScrollView component.
@@ -224,39 +224,6 @@ export interface ScrollViewRef {
 }
 
 /**
- * Internal helper component to measure the height of each child item.
- * @internal
- */
-const MeasurableItem = ({
-  children,
-  onMeasure,
-  index,
-  width,
-  measureKey,
-}: {
-  children: ReactNode;
-  onMeasure: (index: number, height: number) => void;
-  index: number;
-  width: number;
-  measureKey?: number;
-}) => {
-  const ref = useRef<DOMElement>(null);
-
-  useLayoutEffect(() => {
-    if (ref.current) {
-      const { height } = measureElement(ref.current);
-      onMeasure(index, height);
-    }
-  }, [index, onMeasure, width, measureKey, children]);
-
-  return (
-    <Box ref={ref} flexShrink={0} width="100%">
-      {children}
-    </Box>
-  );
-};
-
-/**
  * Hook to manage state with immediate ref synchronization.
  * Useful for values that need to be read synchronously in imperative methods
  * but also trigger re-renders when changed.
@@ -295,8 +262,9 @@ function useStateRef<T>(initialValue: T) {
  * - 🖥️ Viewport resize handling (via manual `remeasure`)
  *
  * **Important Notes:**
- * - This component does NOT typically handle keyboard input directly. Use a hook like `useInput` in a parent component and call `scrollBy` or `scrollTo`.
- * - Children MUST generally have specific keys if you plan to dynamically update them, to ensure correct height tracking.
+ * - This component does NOT automatically capture keyboard input. You must use `useInput` in a parent component and control the scroll via the `onInput` hook or similar.
+ * - Children MUST generally have specific keys if you plan to dynamically update them, to ensure correct height tracking across renders.
+ *
  *
  * @example
  * ```tsx
@@ -344,192 +312,34 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
     // Current scroll position (offset from top).
     const [scrollOffset, setScrollOffset, getScrollOffset] = useStateRef(0);
 
-    // Viewport dimensions (visible area)
-    const [viewportSize, setViewportSize, getViewportSize] = useStateRef({
-      height: 0,
-      width: 0,
-    });
+    const innerRef = useRef<ControlledScrollViewRef>(null);
 
-    // Total height of the scrollable content
-    const [contentHeight, setContentHeight, getContentHeight] = useStateRef(0);
+    // Track content height to handle clamping
+    const contentHeightRef = useRef(0);
 
-    // Per-item measure keys to force re-measurement of specific items
-    const [itemMeasureKeys, setItemMeasureKeys] = useState<
-      Record<number, number>
-    >({});
+    const handleContentHeightChange = useCallback(
+      (height: number, previousHeight: number) => {
+        contentHeightRef.current = height;
+        onContentHeightChange?.(height, previousHeight);
 
-    const viewportRef = useRef<DOMElement>(null);
-    const contentRef = useRef<DOMElement>(null);
-
-    // Track previous content height to fire the change callback
-    const prevContentHeightRef = useRef(0);
-
-    useLayoutEffect(() => {
-      if (contentHeight !== prevContentHeightRef.current) {
-        onContentHeightChange?.(contentHeight, prevContentHeightRef.current);
-        prevContentHeightRef.current = contentHeight;
-      }
-    }, [contentHeight, onContentHeightChange]);
-
-    /**
-     * Map of item keys/indices to their measured heights.
-     * We use a Ref instead of State to allow "optimistic" updates inside
-     * layout callbacks without triggering cascading re-renders.
-     */
-    const itemHeightsRef = useRef<Record<string | number, number>>({});
-
-    /**
-     * Map of child index to their unique key.
-     * Used to look up the correct height in `itemHeightsRef` given an index.
-     */
-    const itemKeysRef = useRef<(string | number)[]>([]);
-
-    /**
-     * Cache of item offset positions (distance from top).
-     * Lazily updated in getItemPosition.
-     */
-    const itemOffsetsRef = useRef<number[]>([]);
-
-    /**
-     * The index of the first invalid item offset position.
-     * 0 means no positions are valid.
-     * If firstInvalidOffsetIndexRef.current is i, then itemOffsetsRef.current[0...i-1] are valid.
-     */
-    const firstInvalidOffsetIndexRef = useRef<number>(0);
-
-    /**
-     * Handler called by MeasurableItem when its size changes.
-     * Implements an "optimistic update" pattern:
-     * 1. Check if height truly changed.
-     * 2. Immediately update state (contentHeight).
-     * 3. Sync the ref (itemHeightsRef) for future lookups.
-     */
-    const handleItemMeasure = useCallback(
-      (index: number, height: number) => {
-        const key = itemKeysRef.current[index] || index;
-        // Only trigger update if height has effectively changed
-        if (itemHeightsRef.current[key] !== height) {
-          const previousHeight = itemHeightsRef.current[key] || 0;
-
-          // Update item height in ref first
-          itemHeightsRef.current = {
-            ...itemHeightsRef.current,
-            [key]: height,
-          };
-
-          // Recalculate total content height from all items
-          // This ensures consistency when children change
-          let newTotalHeight = 0;
-          for (const itemKey of itemKeysRef.current) {
-            newTotalHeight += itemHeightsRef.current[itemKey] || 0;
-          }
-
-          // Update total content height state
-          const currentHeight = getContentHeight();
-          if (newTotalHeight !== currentHeight) {
-            setContentHeight(newTotalHeight);
-          }
-
-          // Notify parent of item height change
-          onItemHeightChange?.(index, height, previousHeight);
-
-          // Invalidate cache from this index onwards
-          // If item at index changes height, its offset is same, but subsequent items shift.
-          // So valid range is up to index (inclusive), so first invalid is index + 1.
-          firstInvalidOffsetIndexRef.current = Math.min(
-            firstInvalidOffsetIndexRef.current,
-            index + 1,
-          );
+        // Clamp scroll position if it exceeds the new max scroll.
+        // This ensures the view doesn't get "stuck" showing empty space if content shrinks.
+        if (getScrollOffset() > height) {
+          setScrollOffset(height);
+          onScroll?.(height);
         }
       },
-      [
-        onItemHeightChange,
-        onContentHeightChange,
-        getContentHeight,
-        setContentHeight,
-      ],
+      [onContentHeightChange, onScroll, getScrollOffset, setScrollOffset],
     );
-
-    const measureViewport = useCallback(() => {
-      if (viewportRef.current) {
-        const { width, height } = measureElement(viewportRef.current);
-        const currentSize = getViewportSize();
-        if (width !== currentSize.width || height !== currentSize.height) {
-          // Notify parent of viewport size change
-          onViewportSizeChange?.({ width, height }, currentSize);
-          setViewportSize({ width, height });
-        }
-      }
-    }, [viewportRef, onViewportSizeChange, getViewportSize, setViewportSize]);
-
-    useLayoutEffect(() => {
-      measureViewport();
-    });
-
-    // Synchronously rebuild item registry when children change.
-    // This MUST happen during render (not in an effect) to ensure
-    // itemKeysRef is updated before MeasurableItem's useLayoutEffect runs.
-    const prevChildrenRef = useRef<typeof children>(null);
-    if (prevChildrenRef.current !== children) {
-      prevChildrenRef.current = children;
-
-      const newItemKeys: (string | number)[] = [];
-      const newItemHeights: Record<string | number, number> = {};
-
-      // Iterate over new children to preserve existing heights where possible
-      Children.forEach(children, (child, index) => {
-        if (!child) {
-          return;
-        }
-        const key = isValidElement(child) ? child.key : null;
-        const effectiveKey = key !== null ? key : index;
-
-        // Use direct index assignment to ensure alignment with Children.map
-        // which iterates over all children including nulls
-        newItemKeys[index] = effectiveKey;
-
-        // Preserve known height
-        const itemHeight = itemHeightsRef.current[effectiveKey] || 0;
-        newItemHeights[effectiveKey] = itemHeight;
-      });
-
-      // Update refs with the new list of items
-      itemHeightsRef.current = newItemHeights;
-      itemKeysRef.current = newItemKeys;
-
-      // Reset offset cache to match new children
-      // The length of itemOffsetsRef should match the max index found + 1 (or newItemKeys.length)
-      itemOffsetsRef.current = new Array(newItemKeys.length).fill(0);
-      firstInvalidOffsetIndexRef.current = 0;
-
-      // Calculate new total height from known items
-      let newTotalHeight = 0;
-      // Iterate using forEach to skip empty slots in the sparse array
-      newItemKeys.forEach((itemKey) => {
-        newTotalHeight += newItemHeights[itemKey] || 0;
-      });
-
-      // Update total content height state if it changed
-      // Note: This happens during render, so React will restart the render with the new state
-      const currentHeight = getContentHeight();
-      if (newTotalHeight !== currentHeight) {
-        setContentHeight(newTotalHeight);
-      }
-    }
-
-    // Effect: Clamp scroll position if it exceeds the new max scroll.
-    // Example: Content shrinks significantly, and we were scrolled to the bottom.
-    // We must "snap back" to the new bottom.
-    useEffect(() => {
-      if (scrollOffset > contentHeight) {
-        setScrollOffset(contentHeight);
-        onScroll?.(contentHeight);
-      }
-    }, [contentHeight, scrollOffset, onScroll, setScrollOffset]);
 
     // Helper to calculate the bottom scroll offset
     const getBottomOffset = useCallback(
-      () => Math.max(0, getContentHeight() - getViewportSize().height),
+      () =>
+        Math.max(
+          0,
+          contentHeightRef.current -
+            (innerRef.current?.getViewportHeight() || 0),
+        ),
       [],
     );
 
@@ -541,7 +351,7 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
           if (typeof offset !== "number" || isNaN(offset)) {
             return;
           }
-          const currentContentHeight = getContentHeight();
+          const currentContentHeight = contentHeightRef.current;
           const newScrollTop = Math.max(
             0,
             Math.min(offset, currentContentHeight),
@@ -555,7 +365,7 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
           if (typeof delta !== "number" || isNaN(delta)) {
             return;
           }
-          const currentContentHeight = getContentHeight();
+          const currentContentHeight = contentHeightRef.current;
           const newScrollTop = Math.max(
             0,
             Math.min(getScrollOffset() + delta, currentContentHeight),
@@ -579,87 +389,31 @@ export const ScrollView = forwardRef<ScrollViewRef, ScrollViewProps>(
           }
         },
         getScrollOffset,
-        getContentHeight,
-        getViewportHeight: () => getViewportSize().height,
+        getContentHeight: () => contentHeightRef.current,
+        getViewportHeight: () => innerRef.current?.getViewportHeight() || 0,
         getBottomOffset,
-        getItemHeight: (index: number) => {
-          const key = itemKeysRef.current[index] || index;
-          return itemHeightsRef.current[key] || 0;
-        },
-        remeasure: measureViewport,
+        getItemHeight: (index: number) =>
+          innerRef.current?.getItemHeight(index) || 0,
+        getItemPosition: (index: number) =>
+          innerRef.current?.getItemPosition(index) || null,
+        remeasure: () => innerRef.current?.remeasure(),
         remeasureItem: (index: number) =>
-          // Trigger re-measurement of child at specific index
-          setItemMeasureKeys((prev) => ({
-            ...prev,
-            [index]: (prev[index] || 0) + 1,
-          })),
-        getItemPosition: (index: number) => {
-          if (index < 0 || index >= itemKeysRef.current.length) {
-            return null;
-          }
-
-          // Lazy update of item offsets
-          if (index >= firstInvalidOffsetIndexRef.current) {
-            let currentOffset = 0;
-            let startIndex = 0;
-
-            // Optimization: continue from last valid position if possible
-            if (firstInvalidOffsetIndexRef.current > 0) {
-              startIndex = firstInvalidOffsetIndexRef.current;
-              const prevIndex = startIndex - 1;
-              const prevKey = itemKeysRef.current[prevIndex] || prevIndex;
-              const prevHeight = itemHeightsRef.current[prevKey] || 0;
-              currentOffset =
-                (itemOffsetsRef.current[prevIndex] ?? 0) + prevHeight;
-            }
-
-            for (let i = startIndex; i <= index; i++) {
-              itemOffsetsRef.current[i] = currentOffset;
-              const key = itemKeysRef.current[i] || i;
-              const height = itemHeightsRef.current[key] || 0;
-              currentOffset += height;
-            }
-            firstInvalidOffsetIndexRef.current = index + 1;
-          }
-
-          const top = itemOffsetsRef.current[index] ?? 0;
-          const key = itemKeysRef.current[index] || index;
-          const height = itemHeightsRef.current[key] || 0;
-          return { top, height };
-        },
+          innerRef.current?.remeasureItem(index),
       }),
-      [onScroll],
+      [onScroll, getBottomOffset, getScrollOffset, setScrollOffset],
     );
 
     return (
-      <Box {...boxProps}>
-        <Box ref={viewportRef} width="100%">
-          <Box overflow={debug ? undefined : "hidden"}>
-            <Box
-              ref={contentRef}
-              flexDirection="column"
-              marginTop={-scrollOffset}
-            >
-              {Children.map(children, (child, index) => {
-                if (!child) {
-                  return null;
-                }
-                return (
-                  <MeasurableItem
-                    key={isValidElement(child) ? child.key || index : index}
-                    index={index}
-                    width={viewportSize.width}
-                    onMeasure={handleItemMeasure}
-                    measureKey={itemMeasureKeys[index]}
-                  >
-                    {child}
-                  </MeasurableItem>
-                );
-              })}
-            </Box>
-          </Box>
-        </Box>
-      </Box>
+      <ControlledScrollView
+        ref={innerRef}
+        scrollOffset={scrollOffset}
+        onViewportSizeChange={onViewportSizeChange}
+        onContentHeightChange={handleContentHeightChange}
+        onItemHeightChange={onItemHeightChange}
+        debug={debug}
+        children={children}
+        {...boxProps}
+      />
     );
   },
 );

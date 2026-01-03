@@ -24,8 +24,8 @@ their visibility using `overflow="hidden"` and `marginTop` offsets.
 
 **Important Notes:**
 
-- This component does NOT typically handle keyboard input directly. Use a hook like `useInput` in a parent component and call `scrollBy` or `scrollTo`.
-- Children MUST generally have specific keys if you plan to dynamically update them, to ensure correct height tracking.
+- This component does NOT automatically capture keyboard input. You must use `useInput` in a parent component and control the scroll via the `onInput` hook or similar.
+- Children MUST generally have specific keys if you plan to dynamically update them, to ensure correct height tracking across renders.
 
 ## Example
 

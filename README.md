@@ -140,14 +140,15 @@ For detailed API documentation, see [API Reference](docs/api/README.md).
 
 Inherits standard `BoxProps` from Ink.
 
-| Prop                    | Type                                      | Description                                                                     |
-| :---------------------- | :---------------------------------------- | :------------------------------------------------------------------------------ |
-| `children`              | `ReactNode`                               | Optional. List of child elements. **Must use unique `key`s** (strings/numbers). |
-| `onScroll`              | `(offset: number) => void`                | Called when scroll position changes.                                            |
-| `onViewportSizeChange`  | `(layout: { width, height }) => void`     | Called when the **viewport** dimensions change.                                 |
-| `onContentHeightChange` | `(height: number) => void`                | Called when the total content height changes.                                   |
-| `onItemHeightChange`    | `(index, height, previousHeight) => void` | Called when an individual item's height changes.                                |
-| ...                     | `BoxProps`                                | Any other prop accepted by Ink's `Box`.                                         |
+| Prop                    | Type                                      | Description                                                                                |
+| :---------------------- | :---------------------------------------- | :----------------------------------------------------------------------------------------- |
+| `children`              | `ReactNode`                               | Optional. List of child elements. **Must use unique `key`s** (strings/numbers).            |
+| `onScroll`              | `(offset: number) => void`                | Called when scroll position changes.                                                       |
+| `onViewportSizeChange`  | `(layout: { width, height }) => void`     | Called when the **viewport** dimensions change.                                            |
+| `onContentHeightChange` | `(height: number) => void`                | Called when the total content height changes.                                              |
+| `onItemHeightChange`    | `(index, height, previousHeight) => void` | Called when an individual item's height changes.                                           |
+| `debug`                 | `boolean`                                 | Optional. If `true`, overflows content instead of hiding it (useful for debugging layout). |
+| ...                     | `BoxProps`                                | Any other prop accepted by Ink's `Box`.                                                    |
 
 ### Ref Methods (`ScrollViewRef`)
 
@@ -167,6 +168,28 @@ Access these via `ref.current`.
 | `getItemPosition`   | `(index: number) => { top, height }` | Returns the position (top offset) and height of a specific item.                                                           |
 | `remeasure`         | `() => void`                         | Re-checks viewport dimensions. **Must call this on terminal resize.**                                                      |
 | `remeasureItem`     | `(index: number) => void`            | Forces a specific child to re-measure. Useful for dynamic content (expand/collapse) that doesn't trigger a full re-render. |
+
+### Controlled Component (`ControlledScrollView`)
+
+For advanced use cases where you need full control over the scroll state (e.g., synchronizing multiple views, animating transitions), you can use `ControlledScrollView`.
+
+It accepts a `scrollOffset` prop instead of managing it internally.
+
+```tsx
+import { ControlledScrollView } from "ink-scroll-view";
+
+// ...
+const [offset, setOffset] = useState(0);
+
+return (
+  <ControlledScrollView
+    scrollOffset={offset}
+    // ... other props
+  >
+    {children}
+  </ControlledScrollView>
+);
+```
 
 ## 💡 Tips
 

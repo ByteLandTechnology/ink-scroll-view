@@ -63,7 +63,7 @@ const navbar = (
     <ThemeSwitch lite />
     {/* GitHub Link - Manually added to control order */}
     <a
-      href="https://github.com/ByteLandTechnology/docs.byteland.app"
+      href="https://github.com/ByteLandTechnology/ink-scroll-view"
       target="_blank"
       rel="noreferrer"
       className="p-2 text-current opacity-80 hover:opacity-100 transition-opacity"
@@ -111,11 +111,10 @@ export default async function RootLayout({
         <Layout
           navbar={navbar}
           pageMap={pageMap}
-          docsRepositoryBase="https://github.com/ByteLandTechnology/docs.byteland.app/tree/main"
+          docsRepositoryBase="https://github.com/ByteLandTechnology/ink-scroll-view/tree/main"
           footer={null}
           sidebar={{ defaultOpen: true }}
           toc={{ float: true, title: "On This Page" }}
-          editLink="Edit this page on GitHub"
         >
           {children}
         </Layout>

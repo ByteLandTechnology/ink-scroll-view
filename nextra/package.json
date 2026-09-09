@@ -13,7 +13,7 @@
     "buffer": "^6.0.3",
     "events": "^3.3.0",
     "ink": "^7.0.1",
-    "ink-canvas": "^0.4.5",
+    "ink-canvas": "^0.4.6",
     "ink-scroll-view": "file:..",
     "next": "16.1.1",
     "nextra": "^4.6.1",

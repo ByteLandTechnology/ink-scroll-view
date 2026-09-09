@@ -20,7 +20,7 @@ their visibility using `overflow="hidden"` and `marginTop` offsets.
 - 📏 Auto-measurement of child heights
 - 🎯 Imperative scrolling methods via ref
 - 🔁 Dynamic content support (adding/removing children)
-- 🖥️ Viewport resize handling (via manual `remeasure`)
+- 🖥️ Viewport resize handling (automatic)
 
 **Important Notes:**
 

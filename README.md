@@ -52,29 +52,35 @@ npm install ink-scroll-view
 npm install ink react
 ```
 
+## ✅ Compatibility
+
+| `ink-scroll-view` | Ink  | React    | Node  |
+| ----------------- | ---- | -------- | ----- |
+| `0.4.x`           | 7    | >= 19.2  | >= 22 |
+| `0.3.x`           | 5, 6 | 18 or 19 | >= 18 |
+
+**Using Ink 5 or 6?** Install the previous line instead:
+
+```bash
+npm install ink-scroll-view@0.3.7
+```
+
+Ink 5 requires React 18, while Ink 6 and 7 require React 19 — the two are not
+interchangeable. `0.3.x` is no longer maintained.
+
 ## 🚀 Usage
 
 `ScrollView` is a layout primitive. It **does not** capture user input automatically. You must control it programmatically using React `refs` and Ink's `useInput`.
 
 ```tsx
-import React, { useRef, useEffect } from "react";
-import { render, Text, Box, useInput, useStdout } from "ink";
+import React, { useRef } from "react";
+import { render, Text, Box, useInput } from "ink";
 import { ScrollView, ScrollViewRef } from "ink-scroll-view";
 
 const App = () => {
   const scrollRef = useRef<ScrollViewRef>(null);
-  const { stdout } = useStdout();
 
-  // 1. Handle Terminal Resizing due to manual window change
-  useEffect(() => {
-    const handleResize = () => scrollRef.current?.remeasure();
-    stdout?.on("resize", handleResize);
-    return () => {
-      stdout?.off("resize", handleResize);
-    };
-  }, [stdout]);
-
-  // 2. Handle Keyboard Input
+  // Terminal resizes are handled automatically — just handle keyboard input.
   useInput((input, key) => {
     if (key.upArrow) {
       scrollRef.current?.scrollBy(-1); // Scroll up 1 line
@@ -166,7 +172,7 @@ Access these via `ref.current`.
 | `getBottomOffset`   | `() => number`                       | Returns the scroll offset when scrolled to the bottom (`contentHeight - viewportHeight`).                                  |
 | `getItemHeight`     | `(index: number) => number`          | Returns the measured height of a specific item by its index.                                                               |
 | `getItemPosition`   | `(index: number) => { top, height }` | Returns the position (top offset) and height of a specific item.                                                           |
-| `remeasure`         | `() => void`                         | Re-checks viewport dimensions. **Must call this on terminal resize.**                                                      |
+| `remeasure`         | `() => void`                         | Re-checks viewport dimensions. Rarely needed — layout changes are tracked automatically.                                   |
 | `remeasureItem`     | `(index: number) => void`            | Forces a specific child to re-measure. Useful for dynamic content (expand/collapse) that doesn't trigger a full re-render. |
 
 ### Controlled Component (`ControlledScrollView`)
@@ -194,7 +200,7 @@ return (
 ## 💡 Tips
 
 1.  **Unique Keys**: Always provide stable, unique `key` props (strings or numbers) to your children. This allows `ScrollView` to accurately track height changes even when items are re-ordered or removed.
-2.  **Terminal Resizing**: Ink components don't automatically know when the terminal window resizes. You need to listen to `process.stdout`'s `resize` event and call `remeasure()` on the ref.
+2.  **Resizing**: Handled for you. The viewport re-measures on every Ink layout commit, so terminal resizes, parent resizes and sibling resizes are all picked up automatically — even when the ScrollView sits in a memoized subtree that never re-renders. `remeasure()` remains available as an escape hatch.
 3.  **Dynamic Content**: If you have an item that expands (e.g., "See more"), calling `remeasureItem(index)` is more efficient than forcing a full update.
 
 ## 🔗 Related Packages

@@ -1,6 +1,7 @@
 import React, {
   useState,
   useRef,
+  type RefObject,
   forwardRef,
   useImperativeHandle,
   useLayoutEffect,
@@ -9,7 +10,7 @@ import React, {
   ReactNode,
   isValidElement,
 } from "react";
-import { Box, BoxProps, measureElement, DOMElement } from "ink";
+import { Box, BoxProps, measureElement, DOMElement, useBoxMetrics } from "ink";
 
 /**
  * Internal helper component to measure the height of each child item.
@@ -160,9 +161,10 @@ export interface ControlledScrollViewRef {
    * Re-measures the ScrollView viewport dimensions.
    *
    * @remarks
-   * Explicitly triggers a measurement of the viewport Box. This is necessary because
-   * Ink does not automatically detect terminal window resizes or parent layout changes
-   * that might affect the viewport size.
+   * Layout changes — terminal resizes, parent or sibling resizes — are tracked
+   * automatically, so this is rarely needed. Reach for it when the viewport
+   * size changes without any Ink layout commit, such as after writing to the
+   * terminal outside of Ink.
    */
   remeasure: () => void;
 
@@ -222,6 +224,10 @@ export const ControlledScrollView = forwardRef<
     >({});
 
     const viewportRef = useRef<DOMElement>(null);
+
+    // Track layout changes even when ancestors skip rendering.
+    // Ink handles null refs, but its type requires this cast.
+    const viewportMetrics = useBoxMetrics(viewportRef as RefObject<DOMElement>);
     const contentRef = useRef<DOMElement>(null);
 
     // Track previous content height to fire the change callback
@@ -324,7 +330,7 @@ export const ControlledScrollView = forwardRef<
 
     useLayoutEffect(() => {
       measureViewport();
-    });
+    }, [measureViewport, viewportMetrics.width, viewportMetrics.height]);
 
     const prevChildrenRef = useRef<typeof children>(null);
     if (prevChildrenRef.current !== children) {

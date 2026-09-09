@@ -137,18 +137,13 @@ Re-measures the ScrollView viewport dimensions.
 #### Remarks
 
 Checks the current dimensions of the viewport and updates state if they have changed.
-This is crucial for handling terminal resizes, as Ink does not automatically propagate resize events to components.
 
-#### Example
+Layout changes are tracked automatically — terminal resizes, and parent or
+sibling resizes, including ones inside a memoized subtree that never
+re-renders. You rarely need to call this.
 
-```tsx
-// Handle terminal resize manually
-useEffect(() => {
-  const onResize = () => ref.current?.remeasure();
-  process.stdout.on("resize", onResize);
-  return () => process.stdout.off("resize", onResize);
-}, []);
-```
+Reach for it when the viewport size changes without any Ink layout commit,
+such as after writing to the terminal outside of Ink.
 
 ---
 

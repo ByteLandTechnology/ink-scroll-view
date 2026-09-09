@@ -1,25 +1,15 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { render, useInput, Text, Box, useStdout } from "ink";
+import { render, useInput, Text, Box } from "ink";
 import { ScrollView, ScrollViewRef } from "../src/index";
 
 const Demo = () => {
   const scrollRef = useRef<ScrollViewRef>(null);
-  const { stdout } = useStdout();
   const [width, setWidth] = useState<string | number>("100%");
 
   // Track scroll state for display
   const [scrollInfo, setScrollInfo] = useState({ scroll: 0, max: 0 });
 
-  // Handle Resize
-  useEffect(() => {
-    const handleResize = () => {
-      scrollRef.current?.remeasure();
-    };
-    stdout?.on("resize", handleResize);
-    return () => {
-      stdout?.off("resize", handleResize);
-    };
-  }, [stdout]);
+  // Terminal resizes are re-measured automatically — no wiring needed here.
 
   const updateScrollInfo = useCallback(() => {
     if (scrollRef.current) {

@@ -16,9 +16,22 @@ Extends standard BoxProps from Ink.
 
 ## Properties
 
+### alignContent?
+
+> `readonly` `optional` **alignContent**: `"flex-start"` \| `"center"` \| `"flex-end"` \| `"stretch"` \| `"space-between"` \| `"space-around"` \| `"space-evenly"`
+
+It defines the alignment along the cross axis when there are multiple lines of flex items (when using flex-wrap).
+See [align-content](https://css-tricks.com/almanac/properties/a/align-content/).
+
+#### Inherited from
+
+`BoxProps.alignContent`
+
+---
+
 ### alignItems?
 
-> `readonly` `optional` **alignItems**: `"flex-start"` \| `"center"` \| `"flex-end"` \| `"stretch"`
+> `readonly` `optional` **alignItems**: `"flex-start"` \| `"center"` \| `"flex-end"` \| `"stretch"` \| `"baseline"`
 
 The align-items property defines the default behavior for how items are laid out along the cross axis (perpendicular to the main axis).
 See [align-items](https://css-tricks.com/almanac/properties/a/align-items/).
@@ -31,7 +44,7 @@ See [align-items](https://css-tricks.com/almanac/properties/a/align-items/).
 
 ### alignSelf?
 
-> `readonly` `optional` **alignSelf**: `"flex-start"` \| `"center"` \| `"flex-end"` \| `"auto"`
+> `readonly` `optional` **alignSelf**: `"flex-start"` \| `"center"` \| `"flex-end"` \| `"stretch"` \| `"baseline"` \| `"auto"`
 
 It makes possible to override the align-items value for specific flex items.
 See [align-self](https://css-tricks.com/almanac/properties/a/align-self/).
@@ -126,6 +139,20 @@ The state of the element.
 
 ---
 
+### aspectRatio?
+
+> `readonly` `optional` **aspectRatio**: `number`
+
+Defines the aspect ratio (width/height) for the element.
+
+Use it with at least one size constraint (`width`, `height`, `minHeight`, or `maxHeight`) so Ink can derive the missing dimension.
+
+#### Inherited from
+
+`BoxProps.aspectRatio`
+
+---
+
 ### backgroundColor?
 
 > `readonly` `optional` **backgroundColor**: `LiteralUnion`\<keyof ForegroundColor, `string`\>
@@ -140,11 +167,23 @@ Accepts the same values as `color` in the `<Text>` component.
 
 ---
 
+### borderBackgroundColor?
+
+> `readonly` `optional` **borderBackgroundColor**: `LiteralUnion`\<keyof ForegroundColor, `string`\>
+
+Change border background color. A shorthand for setting `borderTopBackgroundColor`, `borderRightBackgroundColor`, `borderBottomBackgroundColor`, and `borderLeftBackgroundColor`.
+
+#### Inherited from
+
+`BoxProps.borderBackgroundColor`
+
+---
+
 ### borderBottom?
 
 > `readonly` `optional` **borderBottom**: `boolean`
 
-Determines whether bottom border is visible.
+Determines whether the bottom border is visible.
 
 #### Default
 
@@ -158,11 +197,23 @@ true;
 
 ---
 
+### borderBottomBackgroundColor?
+
+> `readonly` `optional` **borderBottomBackgroundColor**: `LiteralUnion`\<keyof ForegroundColor, `string`\>
+
+Change bottom border background color. Accepts the same values as `backgroundColor` in `Text` component.
+
+#### Inherited from
+
+`BoxProps.borderBottomBackgroundColor`
+
+---
+
 ### borderBottomColor?
 
 > `readonly` `optional` **borderBottomColor**: `LiteralUnion`\<keyof ForegroundColor, `string`\>
 
-Change bottom border color. Accepts the same values as `color` in `Text` component.
+Change the bottom border color. Accepts the same values as `color` in `Text` component.
 
 #### Inherited from
 
@@ -222,7 +273,7 @@ false;
 
 > `readonly` `optional` **borderLeft**: `boolean`
 
-Determines whether left border is visible.
+Determines whether the left border is visible.
 
 #### Default
 
@@ -236,11 +287,23 @@ true;
 
 ---
 
+### borderLeftBackgroundColor?
+
+> `readonly` `optional` **borderLeftBackgroundColor**: `LiteralUnion`\<keyof ForegroundColor, `string`\>
+
+Change left border background color. Accepts the same values as `backgroundColor` in `Text` component.
+
+#### Inherited from
+
+`BoxProps.borderLeftBackgroundColor`
+
+---
+
 ### borderLeftColor?
 
 > `readonly` `optional` **borderLeftColor**: `LiteralUnion`\<keyof ForegroundColor, `string`\>
 
-Change left border color. Accepts the same values as `color` in `Text` component.
+Change the left border color. Accepts the same values as `color` in `Text` component.
 
 #### Inherited from
 
@@ -270,7 +333,7 @@ false;
 
 > `readonly` `optional` **borderRight**: `boolean`
 
-Determines whether right border is visible.
+Determines whether the right border is visible.
 
 #### Default
 
@@ -284,11 +347,23 @@ true;
 
 ---
 
+### borderRightBackgroundColor?
+
+> `readonly` `optional` **borderRightBackgroundColor**: `LiteralUnion`\<keyof ForegroundColor, `string`\>
+
+Change right border background color. Accepts the same values as `backgroundColor` in `Text` component.
+
+#### Inherited from
+
+`BoxProps.borderRightBackgroundColor`
+
+---
+
 ### borderRightColor?
 
 > `readonly` `optional` **borderRightColor**: `LiteralUnion`\<keyof ForegroundColor, `string`\>
 
-Change right border color. Accepts the same values as `color` in `Text` component.
+Change the right border color. Accepts the same values as `color` in `Text` component.
 
 #### Inherited from
 
@@ -330,7 +405,7 @@ Add a border with a specified style. If `borderStyle` is `undefined` (the defaul
 
 > `readonly` `optional` **borderTop**: `boolean`
 
-Determines whether top border is visible.
+Determines whether the top border is visible.
 
 #### Default
 
@@ -344,11 +419,23 @@ true;
 
 ---
 
+### borderTopBackgroundColor?
+
+> `readonly` `optional` **borderTopBackgroundColor**: `LiteralUnion`\<keyof ForegroundColor, `string`\>
+
+Change top border background color. Accepts the same values as `backgroundColor` in `Text` component.
+
+#### Inherited from
+
+`BoxProps.borderTopBackgroundColor`
+
+---
+
 ### borderTopColor?
 
 > `readonly` `optional` **borderTopColor**: `LiteralUnion`\<keyof ForegroundColor, `string`\>
 
-Change top border color. Accepts the same values as `color` in `Text` component.
+Change the top border color. Accepts the same values as `color` in `Text` component.
 
 #### Inherited from
 
@@ -371,6 +458,18 @@ false;
 #### Inherited from
 
 `BoxProps.borderTopDimColor`
+
+---
+
+### bottom?
+
+> `readonly` `optional` **bottom**: `string` \| `number`
+
+Bottom offset for positioned elements.
+
+#### Inherited from
+
+`BoxProps.bottom`
 
 ---
 
@@ -527,6 +626,18 @@ See [justify-content](https://css-tricks.com/almanac/properties/j/justify-conten
 
 ---
 
+### left?
+
+> `readonly` `optional` **left**: `string` \| `number`
+
+Left offset for positioned elements.
+
+#### Inherited from
+
+`BoxProps.left`
+
+---
+
 ### margin?
 
 > `readonly` `optional` **margin**: `number`
@@ -611,11 +722,36 @@ Vertical margin. Equivalent to setting `marginTop` and `marginBottom`.
 
 ---
 
+### maxHeight?
+
+> `readonly` `optional` **maxHeight**: `string` \| `number`
+
+Sets a maximum height of the element in lines (rows). You can also set it as a percentage, which will calculate the maximum height based on the height of the parent element.
+
+#### Inherited from
+
+`BoxProps.maxHeight`
+
+---
+
+### maxWidth?
+
+> `readonly` `optional` **maxWidth**: `string` \| `number`
+
+Sets a maximum width of the element.
+Percentages aren't supported yet; see https://github.com/facebook/yoga/issues/872.
+
+#### Inherited from
+
+`BoxProps.maxWidth`
+
+---
+
 ### minHeight?
 
 > `readonly` `optional` **minHeight**: `string` \| `number`
 
-Sets a minimum height of the element.
+Sets a minimum height of the element in lines (rows). You can also set it as a percentage, which will calculate the minimum height based on the height of the parent element.
 
 #### Inherited from
 
@@ -628,6 +764,7 @@ Sets a minimum height of the element.
 > `readonly` `optional` **minWidth**: `string` \| `number`
 
 Sets a minimum width of the element.
+Percentages aren't supported yet; see https://github.com/facebook/yoga/issues/872.
 
 #### Inherited from
 
@@ -907,11 +1044,27 @@ Vertical padding. Equivalent to setting `paddingTop` and `paddingBottom`.
 
 ### position?
 
-> `readonly` `optional` **position**: `"absolute"` \| `"relative"`
+> `readonly` `optional` **position**: `"absolute"` \| `"relative"` \| `"static"`
+
+Controls how the element is positioned.
+
+When `position` is `static`, `top`, `right`, `bottom`, and `left` are ignored.
 
 #### Inherited from
 
 `BoxProps.position`
+
+---
+
+### right?
+
+> `readonly` `optional` **right**: `string` \| `number`
+
+Right offset for positioned elements.
+
+#### Inherited from
+
+`BoxProps.right`
 
 ---
 
@@ -924,6 +1077,18 @@ Size of the gap between an element's rows.
 #### Inherited from
 
 `BoxProps.rowGap`
+
+---
+
+### top?
+
+> `readonly` `optional` **top**: `string` \| `number`
+
+Top offset for positioned elements.
+
+#### Inherited from
+
+`BoxProps.top`
 
 ---
 

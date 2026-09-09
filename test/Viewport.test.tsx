@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, memo } from "react";
 import { render, Box, Text } from "ink";
 import { describe, it, expect, vi } from "vitest";
 import { ScrollView, ScrollViewRef } from "../src/ScrollView.js";
@@ -224,6 +224,79 @@ describe("Dimensions", () => {
 
     expect(scrollView.getContentHeight()).toBe(5);
     expect(scrollView.getViewportHeight()).toBe(5);
+
+    unmount();
+  });
+});
+
+/**
+ * Tests for automatic re-measurement driven by Ink's layout commits.
+ *
+ * @remarks
+ * The viewport tracks layout changes without the caller invoking `remeasure()`,
+ * including changes originating from a sibling rather than the ScrollView itself.
+ */
+describe("Automatic re-measurement", () => {
+  /**
+   * Verifies the viewport shrinks when a sibling grows, even though the
+   * ScrollView subtree is memoized and therefore never re-renders itself.
+   *
+   * @remarks
+   * This is the case a render-driven measurement cannot catch: React skips the
+   * memoized subtree entirely, so measurement must be driven by the layout
+   * commit rather than by the component's own render.
+   */
+  it("updates the viewport when a memoized subtree is resized by a sibling", async () => {
+    let scrollViewRef: ScrollViewRef | null = null;
+    let setHeaderLines: ((lines: number) => void) | null = null;
+
+    const MemoizedScrollView = memo(function MemoizedScrollView({
+      innerRef,
+    }: {
+      innerRef: React.RefObject<ScrollViewRef | null>;
+    }) {
+      return (
+        <ScrollView ref={innerRef}>
+          {Array.from({ length: 30 }).map((_, i) => (
+            <Box key={i} height={1} flexShrink={0}>
+              <Text>Item {i}</Text>
+            </Box>
+          ))}
+        </ScrollView>
+      );
+    });
+
+    const TestComponent = () => {
+      const ref = useRef<ScrollViewRef>(null);
+      const [headerLines, setLines] = useState(0);
+
+      useEffect(() => {
+        scrollViewRef = ref.current;
+        setHeaderLines = setLines;
+      }, []);
+
+      return (
+        <Box height={10} flexDirection="column">
+          <Box flexDirection="column" flexShrink={0}>
+            {Array.from({ length: headerLines }).map((_, i) => (
+              <Text key={i}>Header {i}</Text>
+            ))}
+          </Box>
+          <MemoizedScrollView innerRef={ref} />
+        </Box>
+      );
+    };
+
+    const { unmount } = render(<TestComponent />);
+    await delay(100);
+
+    expect(scrollViewRef!.getViewportHeight()).toBe(10);
+
+    // Grow the sibling by 5 rows, squeezing the ScrollView. No remeasure() call.
+    setHeaderLines!(5);
+    await delay(100);
+
+    expect(scrollViewRef!.getViewportHeight()).toBe(5);
 
     unmount();
   });

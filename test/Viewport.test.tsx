@@ -293,10 +293,12 @@ describe("Automatic re-measurement", () => {
     expect(scrollViewRef!.getViewportHeight()).toBe(10);
 
     // Grow the sibling by 5 rows, squeezing the ScrollView. No remeasure() call.
+    // Since Ink 8, layout listeners fire via a microtask and the resulting
+    // re-render is scheduled asynchronously, so poll instead of a fixed delay.
     setHeaderLines!(5);
-    await delay(100);
-
-    expect(scrollViewRef!.getViewportHeight()).toBe(5);
+    await vi.waitFor(() => {
+      expect(scrollViewRef!.getViewportHeight()).toBe(5);
+    });
 
     unmount();
   });

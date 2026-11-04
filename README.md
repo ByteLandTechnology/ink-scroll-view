@@ -56,7 +56,7 @@ npm install ink react
 
 | `ink-scroll-view` | Ink  | React    | Node  |
 | ----------------- | ---- | -------- | ----- |
-| `0.4.x`           | 7    | >= 19.2  | >= 22 |
+| `0.4.x`           | 7, 8 | >= 19.2  | >= 22 |
 | `0.3.x`           | 5, 6 | 18 or 19 | >= 18 |
 
 **Using Ink 5 or 6?** Install the previous line instead:
@@ -65,8 +65,9 @@ npm install ink react
 npm install ink-scroll-view@0.3.7
 ```
 
-Ink 5 requires React 18, while Ink 6 and 7 require React 19 — the two are not
-interchangeable. `0.3.x` is no longer maintained.
+Ink 5 requires React 18, while Ink 6, 7 and 8 require React 19 — the two are
+not interchangeable (Ink 8 needs React >= 19.3). `0.3.x` is no longer
+maintained.
 
 ## 🚀 Usage
 

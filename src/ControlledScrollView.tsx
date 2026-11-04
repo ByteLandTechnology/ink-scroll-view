@@ -225,9 +225,14 @@ export const ControlledScrollView = forwardRef<
 
     const viewportRef = useRef<DOMElement>(null);
 
-    // Track layout changes even when ancestors skip rendering.
-    // Ink handles null refs, but its type requires this cast.
-    const viewportMetrics = useBoxMetrics(viewportRef as RefObject<DOMElement>);
+    // Subscribe to Ink's root layout commits so this component re-renders
+    // when a sibling or ancestor resizes the viewport without touching our
+    // props (e.g. inside a memoized subtree). The metrics themselves are not
+    // used: every render re-measures below. Since Ink 8 the hook delivers
+    // layout updates asynchronously (via a microtask), so it cannot be the
+    // only trigger. Ink handles null refs, but Ink < 7.0.3 types reject them,
+    // hence the cast.
+    useBoxMetrics(viewportRef as RefObject<DOMElement>);
     const contentRef = useRef<DOMElement>(null);
 
     // Track previous content height to fire the change callback
@@ -328,9 +333,13 @@ export const ControlledScrollView = forwardRef<
       }
     }, [viewportRef, onViewportSizeChange, getViewportSize, setViewportSize]);
 
+    // Re-measure after every commit of this component. Layout is already
+    // computed when layout effects run, so prop-driven size changes are
+    // reported in the same commit. `measureViewport` only updates state when
+    // the size actually changed, so this is cheap.
     useLayoutEffect(() => {
       measureViewport();
-    }, [measureViewport, viewportMetrics.width, viewportMetrics.height]);
+    });
 
     const prevChildrenRef = useRef<typeof children>(null);
     if (prevChildrenRef.current !== children) {

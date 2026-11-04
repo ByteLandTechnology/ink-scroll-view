@@ -37,7 +37,7 @@
     "docs": "typedoc && prettier --write docs/api"
   },
   "peerDependencies": {
-    "ink": "^7",
+    "ink": "^7 || ^8",
     "react": ">=19.2.0"
   },
   "devDependencies": {
@@ -45,12 +45,12 @@
     "@commitlint/config-conventional": "^20.2.0",
     "@sindresorhus/tsconfig": "^8.1.0",
     "@types/node": "^24.10.1",
-    "@types/react": "^19.2.7",
+    "@types/react": "^19.3.0",
     "husky": "^9.1.7",
-    "ink": "^7.0.1",
+    "ink": "^8.0.0",
     "lint-staged": "^16.2.7",
     "prettier": "^3.7.4",
-    "react": "^19.2.1",
+    "react": "^19.3.1",
     "tsup": "^8.5.1",
     "typedoc": "^0.28.15",
     "typedoc-plugin-markdown": "^4.9.0",

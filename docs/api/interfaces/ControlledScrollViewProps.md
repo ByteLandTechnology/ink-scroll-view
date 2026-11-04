@@ -485,6 +485,46 @@ Size of the gap between an element's columns.
 
 ---
 
+### contentOffsetX?
+
+> `readonly` `optional` **contentOffsetX**: `number`
+
+Horizontal offset applied to the element's children, in columns. Children are shifted left by this amount. Combine with `overflow="hidden"` to build scrollable views.
+
+Offsets are terminal cell coordinates, so fractional values are truncated toward zero and non-finite values are treated as `0`.
+
+#### Default
+
+```ts
+0;
+```
+
+#### Inherited from
+
+`BoxProps.contentOffsetX`
+
+---
+
+### contentOffsetY?
+
+> `readonly` `optional` **contentOffsetY**: `number`
+
+Vertical offset applied to the element's children, in rows. Children are shifted up by this amount. Combine with `overflow="hidden"` to build scrollable views.
+
+Offsets are terminal cell coordinates, so fractional values are truncated toward zero and non-finite values are treated as `0`.
+
+#### Default
+
+```ts
+0;
+```
+
+#### Inherited from
+
+`BoxProps.contentOffsetY`
+
+---
+
 ### debug?
 
 > `optional` **debug**: `boolean`
@@ -717,7 +757,7 @@ Sets a maximum height of the element in lines (rows). You can also set it as a p
 
 ### maxWidth?
 
-> `readonly` `optional` **maxWidth**: `string` \| `number`
+> `readonly` `optional` **maxWidth**: `number`
 
 Sets a maximum width of the element.
 Percentages aren't supported yet; see https://github.com/facebook/yoga/issues/872.
@@ -742,7 +782,7 @@ Sets a minimum height of the element in lines (rows). You can also set it as a p
 
 ### minWidth?
 
-> `readonly` `optional` **minWidth**: `string` \| `number`
+> `readonly` `optional` **minWidth**: `number`
 
 Sets a minimum width of the element.
 Percentages aren't supported yet; see https://github.com/facebook/yoga/issues/872.
